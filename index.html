@@ -1,17 +1,25 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Arcade Horse Racing - Legend of Turf</title>
+    <title>UmaGame</title>
+    <link rel="icon" href="icon.jpeg" type="image/jpeg">
+    <link rel="apple-touch-icon" href="icon.jpeg">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Inter:wght@400;700&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <header>
-        <div class="logo" style="display:flex; flex-direction:column; gap:4px">
-            Legend of Turf
-            <span style="font-size:0.8rem; font-weight:normal; color:#888;">第<span id="race-count-display">0</span>回 レース</span>
+        <div class="logo" style="display:flex; flex-direction:column; gap:4px; cursor:pointer;"
+            onclick="switchScreen('main-menu-screen')">
+            UmaGame
+            <span style="font-size:0.8rem; font-weight:normal; color:#888;">第<span id="race-count-display">0</span>回
+                レース</span>
         </div>
         <div class="coin-display" style="display:flex; flex-direction:column; align-items:flex-end;">
             <div><span class="coin-icon">💰</span> <span id="coin-count">0</span></div>
@@ -20,6 +28,54 @@
     </header>
 
     <main id="game-container">
+        <!-- 画面0: メインメニュー -->
+        <section id="main-menu-screen" class="screen active">
+            <div class="glass-card" style="text-align: center; margin: auto; max-width: 400px; width: 100%;">
+                <h1
+                    style="color:var(--accent-gold); margin-bottom: 2rem; font-size: 2.5rem; text-shadow: 0 0 10px rgba(212,175,55,0.5);">
+                    Menu</h1>
+                <button id="menu-race-btn" class="btn btn-primary"
+                    style="display:block; width:100%; margin-bottom:1rem; padding: 1.5rem; font-size:1.2rem;">🐎
+                    競馬場</button>
+                <button id="menu-stable-btn" class="btn"
+                    style="display:block; width:100%; margin-bottom:1rem; padding: 1.5rem; font-size:1.2rem; background:var(--bg-color); color:var(--text-primary); border:1px solid var(--accent-emerald);">🧹
+                    厩舎</button>
+                <button id="menu-settings-btn" class="btn"
+                    style="display:block; width:100%; padding: 1rem; font-size:1rem; background:rgba(255,255,255,0.1); color:#fff;">⚙
+                    設定</button>
+            </div>
+        </section>
+
+        <!-- 画面S: 設定 -->
+        <section id="settings-screen" class="screen">
+            <div class="glass-card" style="text-align: center; margin: auto; max-width: 400px; width: 100%;">
+                <h2 style="margin-bottom:1rem;">設定</h2>
+
+                <div style="margin: 1.5rem 0; padding:1.5rem; background:rgba(255,255,255,0.05); border-radius:8px;">
+                    <h3 style="margin-bottom: 1rem; color:var(--accent-gold); font-size:1.1rem;">レース速度</h3>
+                    <div style="display:flex; gap:10px; justify-content:center;">
+                        <button id="speed-05-btn" class="btn speed-btn"
+                            style="flex:1; padding:0.8rem; font-size:0.9rem;">0.5x</button>
+                        <button id="speed-10-btn" class="btn btn-primary speed-btn"
+                            style="flex:1; padding:0.8rem; font-size:0.9rem;">1.0x</button>
+                        <button id="speed-20-btn" class="btn speed-btn"
+                            style="flex:1; padding:0.8rem; font-size:0.9rem;">2.0x</button>
+                    </div>
+                </div>
+
+                <div style="margin: 2rem 0; padding:1.5rem; background:rgba(255,0,0,0.1); border-radius:8px;">
+                    <p style="margin-bottom: 1rem; color: #ff6b6b; font-size:0.9rem;">
+                        ※システム設定。全データを初期化し、所持金と進行状況をリセットします。</p>
+                    <button id="reset-data-btn" class="btn"
+                        style="background:#ff4444; color:white; padding:1rem; width:100%;">データ初期化（はじめから）</button>
+                </div>
+
+                <button id="back-to-menu-btn" class="btn"
+                    style="display:block; width:100%; padding: 1rem; font-size:1rem; background:var(--bg-color); color:var(--text-primary); border:1px solid #555;">◀
+                    メニューに戻る</button>
+            </div>
+        </section>
+
         <!-- 画面1: 厩務 (資金稼ぎ) -->
         <section id="stable-screen" class="screen">
             <div class="glass-card">
@@ -32,7 +88,7 @@
         </section>
 
         <!-- 画面2: パドック (レース選択) -->
-        <section id="paddock-screen" class="screen active">
+        <section id="paddock-screen" class="screen">
             <div class="glass-card">
                 <h2 id="race-title-display">出馬表</h2>
                 <p>次のレースに出走する馬たちです。距離への適性（SP/ST）や調子をチェックしましょう。</p>
@@ -50,8 +106,7 @@
             <div class="glass-card">
                 <h2>馬券購入</h2>
                 <div id="bet-tabs">
-                    <button class="btn active" data-tab="win">単勝</button>
-                    <!-- 他の馬券タイプもここに追加予定 -->
+                    <!-- Javascript will populate this based on TABS_DEF -->
                 </div>
             </div>
             <div id="betting-interface" class="glass-card">
@@ -65,9 +120,10 @@
 
         <!-- 画面4: レース実況 -->
         <section id="race-screen" class="screen">
-            <div id="race-view" style="position: relative; flex: 1; border-radius: 12px; overflow: hidden;">
+            <div id="race-view" style="position: relative; flex: 1; min-height: 400px; border-radius: 12px; overflow: hidden;">
                 <canvas id="race-canvas"></canvas>
-                <div id="commentary" style="position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; font-size: 0.9rem;">
+                <div id="commentary"
+                    style="position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; font-size: 0.9rem;">
                     実況: 各馬ゲートに入ります...
                 </div>
             </div>
@@ -85,234 +141,273 @@
         </section>
     </main>
 
-    <nav>
-        <div class="nav-item" id="nav-stable">厩務(小銭稼ぎ)</div>
-        <div class="nav-item active" id="nav-race">競馬場</div>
-    </nav>
-
     <script>
-// --- Horse Database ---
-const HORSES = [
-    { id: 1, name: "レジェンド", speed: 75, stamina: 114, guts: 120, type: "追", apt: "G", color: "#FFD700" },
-    { id: 2, name: "スターライト", speed: 75, stamina: 114, guts: 117, type: "追", apt: "G", color: "#FFFFE0" },
-    { id: 3, name: "ベニザクラ", speed: 96, stamina: 102, guts: 108, type: "先", apt: "G", color: "#8B0000" },
-    { id: 4, name: "シルバーブレット", speed: 84, stamina: 102, guts: 114, type: "先", apt: "G", color: "#C0C0C0" },
-    { id: 5, name: "ブラックホール", speed: 99, stamina: 90, guts: 105, type: "先", apt: "D", color: "#000000" },
-    { id: 6, name: "ロイヤルナイト", speed: 72, stamina: 102, guts: 114, type: "先", apt: "G", color: "#800080" },
-    { id: 7, name: "ダイヤモンドスター", speed: 96, stamina: 84, guts: 105, type: "差", apt: "G", color: "#E0FFFF" },
-    { id: 8, name: "カフェモカ", speed: 81, stamina: 96, guts: 108, type: "差", apt: "G", color: "#A0522D" },
-    { id: 9, name: "ハヤテ", speed: 99, stamina: 96, guts: 90, type: "差", apt: "G", color: "#708090" },
-    { id: 10, name: "エメラルドシティー", speed: 84, stamina: 96, guts: 105, type: "差", apt: "G", color: "#00FA9A" },
-    { id: 11, name: "キングスガード", speed: 78, stamina: 108, guts: 99, type: "先", apt: "G", color: "#4682B4" },
-    { id: 12, name: "ナイトメア", speed: 93, stamina: 84, guts: 108, type: "追", apt: "G", color: "#2F4F4F" },
-    { id: 13, name: "ゼログラビティ", speed: 93, stamina: 87, guts: 102, type: "差", apt: "G", color: "#4B0082" },
-    { id: 14, name: "オヤスミマン", speed: 60, stamina: 105, guts: 117, type: "追", apt: "G", color: "#483D8B" },
-    { id: 15, name: "ミカヅキ", speed: 69, stamina: 120, guts: 90, type: "先", apt: "G", color: "#FFFACD" },
-    { id: 16, name: "オメガドライブ", speed: 114, stamina: 75, guts: 84, type: "逃", apt: "G", color: "#333333" },
-    { id: 17, name: "アイランドブリーズ", speed: 90, stamina: 96, guts: 84, type: "逃", apt: "G", color: "#AFEEEE" },
-    { id: 18, name: "ネオンナイト", speed: 102, stamina: 78, guts: 90, type: "先", apt: "D", color: "#FF00FF" },
-    { id: 19, name: "ギャラクシー", speed: 102, stamina: 72, guts: 90, type: "追", apt: "G", color: "#8A2BE2" },
-    { id: 20, name: "サファイアリング", speed: 84, stamina: 90, guts: 90, type: "差", apt: "G", color: "#4169E1" },
-    { id: 21, name: "キャンディドロップ", speed: 87, stamina: 93, guts: 81, type: "追", apt: "G", color: "#FFB6C1" },
-    { id: 22, name: "コスモバースト", speed: 111, stamina: 66, guts: 84, type: "逃", apt: "G", color: "#FF8C00" },
-    { id: 23, name: "サンセットグロウ", speed: 84, stamina: 114, guts: 60, type: "追", apt: "G", color: "#FF4500" },
-    { id: 24, name: "ルビーハート", speed: 72, stamina: 111, guts: 75, type: "差", apt: "G", color: "#DC143C" },
-    { id: 25, name: "デザートストーム", speed: 96, stamina: 72, guts: 87, type: "差", apt: "G", color: "#EDE275" },
-    { id: 26, name: "ムーンシャドウ", speed: 81, stamina: 75, guts: 96, type: "差", apt: "G", color: "#191970" },
-    { id: 27, name: "クリスタルレイン", speed: 90, stamina: 90, guts: 72, type: "先", apt: "G", color: "#B0E0E6" },
-    { id: 28, name: "アイスエイジ", speed: 87, stamina: 99, guts: 66, type: "逃", apt: "G", color: "#F0FFFF" },
-    { id: 29, name: "ジャングルビート", speed: 90, stamina: 84, guts: 78, type: "先", apt: "G", color: "#008000" },
-    { id: 30, name: "ルナフェイズ", speed: 90, stamina: 75, guts: 84, type: "先", apt: "G", color: "#C0C0C0" },
-    { id: 31, name: "ゴールデンアロー", speed: 78, stamina: 105, guts: 66, type: "逃", apt: "G", color: "#DAA520" },
-    { id: 32, name: "オーシャンブルー", speed: 93, stamina: 84, guts: 72, type: "差", apt: "G", color: "#000080" },
-    { id: 33, name: "ワイルドカード", speed: 96, stamina: 75, guts: 75, type: "先", apt: "G", color: "#006400" },
-    { id: 34, name: "カミナリ", speed: 105, stamina: 75, guts: 60, type: "逃", apt: "G", color: "#FFFF00" },
-    { id: 35, name: "ユキカゼ", speed: 90, stamina: 66, guts: 84, type: "追", apt: "G", color: "#FFFFFF" },
-    { id: 36, name: "クイーンズレース", speed: 99, stamina: 60, guts: 81, type: "差", apt: "G", color: "#FF69B4" },
-    { id: 37, name: "コズミック", speed: 102, stamina: 60, guts: 75, type: "追", apt: "G", color: "#6A5ACD" },
-    { id: 38, name: "スカイハイ", speed: 108, stamina: 60, guts: 66, type: "先", apt: "G", color: "#87CEEB" },
-    { id: 39, name: "フレイムダッシュ", speed: 108, stamina: 36, guts: 84, type: "逃", apt: "G", color: "#FF0000" },
-    { id: 40, name: "フォレストキング", speed: 75, stamina: 60, guts: 90, type: "先", apt: "G", color: "#228B22" },
-    { id: 41, name: "サンダーボルト", speed: 105, stamina: 45, guts: 75, type: "逃", apt: "G", color: "#FFD700" },
-    { id: 42, name: "ミストランナー", speed: 111, stamina: 54, guts: 60, type: "先", apt: "G", color: "#F5F5F5" },
-    { id: 43, name: "ヤマビコ", speed: 84, stamina: 75, guts: 66, type: "逃", apt: "G", color: "#556B2F" },
-    { id: 44, name: "サクラフブキ", speed: 102, stamina: 54, guts: 66, type: "追", apt: "G", color: "#FFC0CB" },
-    { id: 45, name: "ミラージュ", speed: 105, stamina: 54, guts: 60, type: "逃", apt: "G", color: "#F0E68C" },
-    { id: 46, name: "ショコラデライト", speed: 75, stamina: 66, guts: 75, type: "差", apt: "G", color: "#8B4513" },
-    { id: 47, name: "ファンタジスタ", speed: 108, stamina: 36, guts: 66, type: "逃", apt: "G", color: "#EE82EE" },
-    { id: 48, name: "ノラネコパンチ", speed: 105, stamina: 30, guts: 60, type: "逃", apt: "G", color: "#FFA500" },
-    { id: 49, name: "ソニックブーム", speed: 114, stamina: 30, guts: 45, type: "逃", apt: "G", color: "#0000FF" },
-    { id: 50, name: "マシュマロダンス", speed: 66, stamina: 45, guts: 66, type: "追", apt: "D", color: "#FFF5EE" }
-];
+        // --- Horse Database ---
+        const HORSES = [
+            { id: 1, name: "レジェンド", speed: 75, stamina: 114, guts: 120, type: "追", apt: "G", color: "#FFD700" },
+            { id: 2, name: "スターライト", speed: 75, stamina: 114, guts: 117, type: "追", apt: "G", color: "#FFFFE0" },
+            { id: 3, name: "ベニザクラ", speed: 96, stamina: 102, guts: 108, type: "先", apt: "G", color: "#8B0000" },
+            { id: 4, name: "シルバーブレット", speed: 84, stamina: 102, guts: 114, type: "先", apt: "G", color: "#C0C0C0" },
+            { id: 5, name: "ブラックホール", speed: 99, stamina: 90, guts: 105, type: "先", apt: "D", color: "#000000" },
+            { id: 6, name: "ロイヤルナイト", speed: 72, stamina: 102, guts: 114, type: "先", apt: "G", color: "#800080" },
+            { id: 7, name: "ダイヤモンドスター", speed: 96, stamina: 84, guts: 105, type: "差", apt: "G", color: "#E0FFFF" },
+            { id: 8, name: "カフェモカ", speed: 81, stamina: 96, guts: 108, type: "差", apt: "G", color: "#A0522D" },
+            { id: 9, name: "ハヤテ", speed: 99, stamina: 96, guts: 90, type: "差", apt: "G", color: "#708090" },
+            { id: 10, name: "エメラルドシティー", speed: 84, stamina: 96, guts: 105, type: "差", apt: "G", color: "#00FA9A" },
+            { id: 11, name: "キングスガード", speed: 78, stamina: 108, guts: 99, type: "先", apt: "G", color: "#4682B4" },
+            { id: 12, name: "ナイトメア", speed: 93, stamina: 84, guts: 108, type: "追", apt: "G", color: "#2F4F4F" },
+            { id: 13, name: "ゼログラビティ", speed: 93, stamina: 87, guts: 102, type: "差", apt: "G", color: "#4B0082" },
+            { id: 14, name: "オヤスミマン", speed: 60, stamina: 105, guts: 117, type: "追", apt: "G", color: "#483D8B" },
+            { id: 15, name: "ミカヅキ", speed: 69, stamina: 120, guts: 90, type: "先", apt: "G", color: "#FFFACD" },
+            { id: 16, name: "オメガドライブ", speed: 114, stamina: 75, guts: 84, type: "逃", apt: "G", color: "#333333" },
+            { id: 17, name: "アイランドブリーズ", speed: 90, stamina: 96, guts: 84, type: "逃", apt: "G", color: "#AFEEEE" },
+            { id: 18, name: "ネオンナイト", speed: 102, stamina: 78, guts: 90, type: "先", apt: "D", color: "#FF00FF" },
+            { id: 19, name: "ギャラクシー", speed: 102, stamina: 72, guts: 90, type: "追", apt: "G", color: "#8A2BE2" },
+            { id: 20, name: "サファイアリング", speed: 84, stamina: 90, guts: 90, type: "差", apt: "G", color: "#4169E1" },
+            { id: 21, name: "キャンディドロップ", speed: 87, stamina: 93, guts: 81, type: "追", apt: "G", color: "#FFB6C1" },
+            { id: 22, name: "コスモバースト", speed: 111, stamina: 66, guts: 84, type: "逃", apt: "G", color: "#FF8C00" },
+            { id: 23, name: "サンセットグロウ", speed: 84, stamina: 114, guts: 60, type: "追", apt: "G", color: "#FF4500" },
+            { id: 24, name: "ルビーハート", speed: 72, stamina: 111, guts: 75, type: "差", apt: "G", color: "#DC143C" },
+            { id: 25, name: "デザートストーム", speed: 96, stamina: 72, guts: 87, type: "差", apt: "G", color: "#EDE275" },
+            { id: 26, name: "ムーンシャドウ", speed: 81, stamina: 75, guts: 96, type: "差", apt: "G", color: "#191970" },
+            { id: 27, name: "クリスタルレイン", speed: 90, stamina: 90, guts: 72, type: "先", apt: "G", color: "#B0E0E6" },
+            { id: 28, name: "アイスエイジ", speed: 87, stamina: 99, guts: 66, type: "逃", apt: "G", color: "#F0FFFF" },
+            { id: 29, name: "ジャングルビート", speed: 90, stamina: 84, guts: 78, type: "先", apt: "G", color: "#008000" },
+            { id: 30, name: "ルナフェイズ", speed: 90, stamina: 75, guts: 84, type: "先", apt: "G", color: "#C0C0C0" },
+            { id: 31, name: "ゴールデンアロー", speed: 78, stamina: 105, guts: 66, type: "逃", apt: "G", color: "#DAA520" },
+            { id: 32, name: "オーシャンブルー", speed: 93, stamina: 84, guts: 72, type: "差", apt: "G", color: "#000080" },
+            { id: 33, name: "ワイルドカード", speed: 96, stamina: 75, guts: 75, type: "先", apt: "G", color: "#006400" },
+            { id: 34, name: "カミナリ", speed: 105, stamina: 75, guts: 60, type: "逃", apt: "G", color: "#FFFF00" },
+            { id: 35, name: "ユキカゼ", speed: 90, stamina: 66, guts: 84, type: "追", apt: "G", color: "#FFFFFF" },
+            { id: 36, name: "クイーンズレース", speed: 99, stamina: 60, guts: 81, type: "差", apt: "G", color: "#FF69B4" },
+            { id: 37, name: "コズミック", speed: 102, stamina: 60, guts: 75, type: "追", apt: "G", color: "#6A5ACD" },
+            { id: 38, name: "スカイハイ", speed: 108, stamina: 60, guts: 66, type: "先", apt: "G", color: "#87CEEB" },
+            { id: 39, name: "フレイムダッシュ", speed: 108, stamina: 36, guts: 84, type: "逃", apt: "G", color: "#FF0000" },
+            { id: 40, name: "フォレストキング", speed: 75, stamina: 60, guts: 90, type: "先", apt: "G", color: "#228B22" },
+            { id: 41, name: "サンダーボルト", speed: 105, stamina: 45, guts: 75, type: "逃", apt: "G", color: "#FFD700" },
+            { id: 42, name: "ミストランナー", speed: 111, stamina: 54, guts: 60, type: "先", apt: "G", color: "#F5F5F5" },
+            { id: 43, name: "ヤマビコ", speed: 84, stamina: 75, guts: 66, type: "逃", apt: "G", color: "#556B2F" },
+            { id: 44, name: "サクラフブキ", speed: 102, stamina: 54, guts: 66, type: "追", apt: "G", color: "#FFC0CB" },
+            { id: 45, name: "ミラージュ", speed: 105, stamina: 54, guts: 60, type: "逃", apt: "G", color: "#F0E68C" },
+            { id: 46, name: "ショコラデライト", speed: 75, stamina: 66, guts: 75, type: "差", apt: "G", color: "#8B4513" },
+            { id: 47, name: "ファンタジスタ", speed: 108, stamina: 36, guts: 66, type: "逃", apt: "G", color: "#EE82EE" },
+            { id: 48, name: "ノラネコパンチ", speed: 105, stamina: 30, guts: 60, type: "逃", apt: "G", color: "#FFA500" },
+            { id: 49, name: "ソニックブーム", speed: 114, stamina: 30, guts: 45, type: "逃", apt: "G", color: "#0000FF" },
+            { id: 50, name: "マシュマロダンス", speed: 66, stamina: 45, guts: 66, type: "追", apt: "D", color: "#FFF5EE" }
+        ];
 
-// --- Application State ---
-let state = {
-    coins: 10,
-    tapReward: 1,
-    currentRace: null,
-    bets: [],
-    history: {}, // 馬ごとのこれまでの戦績 { horseId: { wins: 0, total: 0 } }
-    lastConditions: {}, // { horseId: condition }
-    recentResults: [], // [{ winner: "", runnerUp: "", third: "" }]
-    recentPlacements: {}, // 馬ごとの近走成績 { horseId: [1, 2, 5...] }
-    raceCount: 0,
-    gameCleared: false
-};
+        // --- Application State ---
+        let state = {
+            coins: 10,
+            tapReward: 1,
+            currentRace: null,
+            bets: [],
+            history: {}, // 馬ごとのこれまでの戦績 { horseId: { wins: 0, total: 0 } }
+            lastConditions: {}, // { horseId: condition }
+            recentResults: [], // [{ winner: "", runnerUp: "", third: "" }]
+            recentPlacements: {}, // 馬ごとの近走成績 { horseId: [1, 2, 5...] }
+            raceCount: 0,
+            gameCleared: false,
+            raceSpeed: 1.0
+        };
 
-// --- Dom Elements ---
-const screens = document.querySelectorAll('.screen');
-const navItems = document.querySelectorAll('.nav-item');
-const coinLabel = document.getElementById('coin-count');
-const dirtField = document.getElementById('dirt-field');
-const entryList = document.getElementById('horse-entry-list');
-const canvas = document.getElementById('race-canvas');
-const ctx = canvas.getContext('2d');
+        const betSelections = { sortMode: 'number', h1: null, h2: null, amounts: {} };
 
-// --- Initialization ---
-function init() {
-    console.log("Legend of Turf - Game Init");
-    loadGame();
-    updateUI();
-    spawnDirtLoop();
-    
-    // Add Event Listeners
-    navItems.forEach(item => {
-        item.addEventListener('click', () => switchTab(item.id));
-    });
+        // --- Dom Elements ---
+        const screens = document.querySelectorAll('.screen');
+        const coinLabel = document.getElementById('coin-count');
+        const dirtField = document.getElementById('dirt-field');
+        const entryList = document.getElementById('horse-entry-list');
+        const canvas = document.getElementById('race-canvas');
+        const ctx = canvas.getContext('2d');
 
-    document.getElementById('go-betting-btn').addEventListener('click', () => switchScreen('betting-screen'));
-    document.getElementById('back-paddock-btn').addEventListener('click', () => switchScreen('paddock-screen'));
-    document.getElementById('start-race-btn').addEventListener('click', startRace);
+        // --- Initialization ---
+        function init() {
+            console.log("Legend of Turf - Game Init");
+            loadGame();
+            updateUI();
+            spawnDirtLoop();
 
-    // 初期画面がパドックなので準備
-    prepareRace();
-}
+            document.getElementById('go-betting-btn').addEventListener('click', () => switchScreen('betting-screen'));
+            document.getElementById('back-paddock-btn').addEventListener('click', () => switchScreen('paddock-screen'));
+            document.getElementById('start-race-btn').addEventListener('click', startRace);
 
-// --- Screen Management ---
-function switchScreen(screenId) {
-    screens.forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
-}
+            document.getElementById('menu-race-btn').addEventListener('click', () => switchScreen('paddock-screen'));
+            document.getElementById('menu-stable-btn').addEventListener('click', () => switchScreen('stable-screen'));
+            document.getElementById('menu-settings-btn').addEventListener('click', () => switchScreen('settings-screen'));
 
-function switchTab(navId) {
-    navItems.forEach(n => n.classList.remove('active'));
-    document.getElementById(navId).classList.add('active');
-    
-    if (navId === 'nav-stable') switchScreen('stable-screen');
-    if (navId === 'nav-race') switchScreen('paddock-screen');
-}
+            document.getElementById('speed-05-btn').addEventListener('click', () => setRaceSpeed(0.5));
+            document.getElementById('speed-10-btn').addEventListener('click', () => setRaceSpeed(1.0));
+            document.getElementById('speed-20-btn').addEventListener('click', () => setRaceSpeed(2.0));
 
-// --- Labor (Stable) Logic ---
-function spawnDirtLoop() {
-    setInterval(() => {
-        if (state.coins > 10) return;
-        if (document.getElementById('stable-screen').classList.contains('active')) {
-            createDirt();
+            document.getElementById('back-to-menu-btn').addEventListener('click', () => {
+                switchScreen('main-menu-screen');
+            });
+            document.getElementById('reset-data-btn').addEventListener('click', () => {
+                if (confirm("本当に全てのデータを消去し、最初からやり直しますか？")) {
+                    localStorage.removeItem('horse-racing-save');
+                    location.reload();
+                }
+            });
+
+            // 初期化時はパドックのレースを準備してから、メニュー画面を表示
+            prepareRace();
+            setRaceSpeed(state.raceSpeed || 1.0); // 速度設定のUI初期化
         }
-    }, 1500);
-}
 
-function createDirt() {
-    const dirt = document.createElement('div');
-    dirt.className = 'dirt';
-    const rect = dirtField.getBoundingClientRect();
-    const x = Math.random() * (rect.width - 40);
-    const y = Math.random() * (rect.height - 40);
-    dirt.style.left = `${x}px`;
-    dirt.style.top = `${y}px`;
-    
-    dirt.onclick = (e) => {
-        e.stopPropagation();
-        state.coins += state.tapReward;
-        updateUI();
-        saveGame(); // オートセーブ
-        dirt.remove();
-    };
-    
-    dirtField.appendChild(dirt);
-    setTimeout(() => { if(dirt.parentElement) dirt.remove(); }, 4000);
-}
+        function setRaceSpeed(speed) {
+            state.raceSpeed = speed;
+            saveGame();
+            document.querySelectorAll('.speed-btn').forEach(b => {
+                b.classList.remove('btn-primary');
+                b.style.background = 'rgba(255,255,255,0.1)';
+                b.style.color = '#fff';
+            });
 
-// --- Race Preparation ---
-const RACE_TYPES = [
-    { name: "スプリントステークス", distance: 1200, label: "短距離", spWeight: 0.7, stWeight: 0.1, gtWeight: 0.2 },
-    { name: "マイラーズカップ", distance: 1600, label: "マイル", spWeight: 0.5, stWeight: 0.3, gtWeight: 0.2 },
-    { name: "クラシックカップ", distance: 2000, label: "中距離", spWeight: 0.3, stWeight: 0.5, gtWeight: 0.2 },
-    { name: "ステイヤーズステークス", distance: 2400, label: "長距離", spWeight: 0.1, stWeight: 0.7, gtWeight: 0.2 }
-];
+            let activeBtn;
+            if (speed === 0.5) activeBtn = document.getElementById('speed-05-btn');
+            if (speed === 1.0) activeBtn = document.getElementById('speed-10-btn');
+            if (speed === 2.0) activeBtn = document.getElementById('speed-20-btn');
 
-function prepareRace() {
-    const raceType = RACE_TYPES[Math.floor(Math.random() * RACE_TYPES.length)];
-    const shuffled = [...HORSES].sort(() => 0.5 - Math.random());
-    let entries = shuffled.slice(0, 8).map(horse => {
-        // 調子を 1-5 に設定（内部データ）
-        const conditionValue = Math.floor(Math.random() * 5) + 1;
-        const lastCond = state.lastConditions[horse.id] || 3;
-        
-        let arrow = "→";
-        if (conditionValue > lastCond) arrow = "↑";
-        else if (conditionValue < lastCond) arrow = "↓";
-        
-        // ステータスから割り出される強さの目安を人気に反映
-        const estimatedStrength = (horse.speed * raceType.spWeight) + (horse.stamina * raceType.stWeight) + (horse.guts * raceType.gtWeight);
-        const popBase = estimatedStrength;
+            if (activeBtn) {
+                activeBtn.classList.add('btn-primary');
+                activeBtn.style.background = ''; // デフォルトCSSクラスの設定に任せる
+                activeBtn.style.color = '';
+            }
+        }
 
-        // 次回のために現在の調子を保存
-        state.lastConditions[horse.id] = conditionValue;
+        // --- Screen Management ---
+        function switchScreen(screenId) {
+            screens.forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
 
-        return {
-            ...horse,
-            condition: conditionValue,
-            conditionTxt: arrow, // 数字は表示せず矢印のみにする
-            popBase: popBase
-        };
-    });
+        // --- Labor (Stable) Logic ---
+        function spawnDirtLoop() {
+            setInterval(() => {
+                if (state.coins >= 10) return;
+                if (document.getElementById('stable-screen').classList.contains('active')) {
+                    createDirt();
+                }
+            }, 1500);
+        }
 
-    state.currentRace = {
-        name: raceType.name,
-        label: raceType.label,
-        distance: raceType.distance,
-        type: raceType,
-        entries: entries,
-        bets: [],
-        status: 'betting'
-    };
+        function createDirt() {
+            const dirt = document.createElement('div');
+            dirt.className = 'dirt';
+            const rect = dirtField.getBoundingClientRect();
+            const x = Math.random() * (rect.width - 40);
+            const y = Math.random() * (rect.height - 40);
+            dirt.style.left = `${x}px`;
+            dirt.style.top = `${y}px`;
 
-    renderPaddock();
-    calculateOdds();
-    saveGame(); // 調子などを保存
-}
+            dirt.onclick = (e) => {
+                e.stopPropagation();
+                if (state.coins >= 10) {
+                    dirt.remove();
+                    return;
+                }
+                state.coins += state.tapReward;
+                updateUI();
+                saveGame(); // オートセーブ
+                dirt.remove();
+            };
 
-function renderPaddock() {
-    const title = document.getElementById('race-title-display');
-    if (title && state.currentRace.name) {
-        title.innerHTML = `${state.currentRace.name} <span style="font-size:1rem; color:var(--accent-gold);">(${state.currentRace.distance}m / ${state.currentRace.label})</span>`;
-    }
+            dirtField.appendChild(dirt);
+            setTimeout(() => { if (dirt.parentElement) dirt.remove(); }, 4000);
+        }
 
-    entryList.innerHTML = '';
-    state.currentRace.entries.forEach((horse, index) => {
-        const item = document.createElement('div');
-        item.className = 'horse-item';
-        // 調子 4, 5 を UP、1, 2 を DOWN とする
-        const condClass = horse.condition >= 4 ? 'condition-up' : (horse.condition <= 2 ? 'condition-down' : '');
-        
-        const placements = (state.recentPlacements && state.recentPlacements[horse.id]) ? state.recentPlacements[horse.id] : [];
-        const placeText = placements.length > 0 
-            ? placements.map(p => p <= 3 ? `<span style="color:var(--accent-gold); font-weight:bold;">${p}着</span>` : `${p}着`).join(' - ')
-            : '初出走';
+        // --- Race Preparation ---
+        const RACE_TYPES = [
+            { name: "スプリントステークス", distance: 1200, label: "短距離", element: "G", spWeight: 0.7, stWeight: 0.1, gtWeight: 0.2 },
+            { name: "ダートスプリント", distance: 1200, label: "短距離", element: "D", spWeight: 0.7, stWeight: 0.1, gtWeight: 0.2 },
+            { name: "マイラーズカップ", distance: 1600, label: "マイル", element: "G", spWeight: 0.5, stWeight: 0.3, gtWeight: 0.2 },
+            { name: "ダートマイル", distance: 1600, label: "マイル", element: "D", spWeight: 0.5, stWeight: 0.3, gtWeight: 0.2 },
+            { name: "クラシックカップ", distance: 2000, label: "中距離", element: "G", spWeight: 0.3, stWeight: 0.5, gtWeight: 0.2 },
+            { name: "ダートクラシック", distance: 2000, label: "中距離", element: "D", spWeight: 0.3, stWeight: 0.5, gtWeight: 0.2 },
+            { name: "ステイヤーズステークス", distance: 2400, label: "長距離", element: "G", spWeight: 0.1, stWeight: 0.7, gtWeight: 0.2 },
+            { name: "ダートステイヤー", distance: 2400, label: "長距離", element: "D", spWeight: 0.1, stWeight: 0.7, gtWeight: 0.2 }
+        ];
 
-        const getGrade = val => {
-            if (val >= 115) return '<span style="color:#ff4500;font-weight:bold;">S</span>';
-            if (val >= 100) return '<span style="color:#ff1493;font-weight:bold;">A</span>';
-            if (val >= 85) return '<span style="color:#ff8c00;font-weight:bold;">B</span>';
-            if (val >= 70) return '<span style="color:#32cd32;font-weight:bold;">C</span>';
-            if (val >= 55) return '<span style="color:#1e90ff;font-weight:bold;">D</span>';
-            return '<span style="color:#808080;font-weight:bold;">E</span>';
-        };
+        function prepareRace() {
+            const raceType = RACE_TYPES[Math.floor(Math.random() * RACE_TYPES.length)];
+            const shuffled = [...HORSES].sort(() => 0.5 - Math.random());
+            let entries = shuffled.slice(0, 8).map(horse => {
+                // 調子を 1-5 に設定（内部データ）
+                const conditionValue = Math.floor(Math.random() * 5) + 1;
+                const lastCond = state.lastConditions[horse.id] || 3;
 
-        const statsHtml = `[<span style="color:white">${horse.type}</span>] SP:${getGrade(horse.speed)} ST:${getGrade(horse.stamina)} GT:${getGrade(horse.guts)}`;
+                let arrow = "→";
+                if (conditionValue > lastCond) arrow = "↑";
+                else if (conditionValue < lastCond) arrow = "↓";
 
-        item.innerHTML = `
+                // ステータスから割り出される強さの目安を人気に反映。芝・ダート適性ボーナスを含む
+                const surfaceMultiplier = (horse.apt === raceType.element) ? 1.15 : 0.85;
+                const estimatedStrength = ((horse.speed * raceType.spWeight) + (horse.stamina * raceType.stWeight) + (horse.guts * raceType.gtWeight)) * surfaceMultiplier;
+                const popBase = estimatedStrength;
+
+                // 次回のために現在の調子を保存
+                state.lastConditions[horse.id] = conditionValue;
+
+                return {
+                    ...horse,
+                    condition: conditionValue,
+                    conditionTxt: arrow, // 数字は表示せず矢印のみにする
+                    popBase: popBase
+                };
+            });
+
+            state.currentRace = {
+                name: raceType.name,
+                label: raceType.label,
+                distance: raceType.distance,
+                type: raceType,
+                entries: entries,
+                bets: [],
+                status: 'betting'
+            };
+
+            betSelections.amounts = {};
+            betSelections.h1 = null;
+            betSelections.h2 = null;
+
+            renderPaddock();
+            calculateOdds();
+            saveGame(); // 調子などを保存
+        }
+
+        function renderPaddock() {
+            const title = document.getElementById('race-title-display');
+            const elementLabel = state.currentRace.type.element === 'G' ? "芝" : "ダート";
+            if (title && state.currentRace.name) {
+                title.innerHTML = `${state.currentRace.name} <span style="font-size:1rem; color:var(--accent-gold);">(${elementLabel} ${state.currentRace.distance}m / ${state.currentRace.label})</span>`;
+            }
+
+            entryList.innerHTML = '';
+            state.currentRace.entries.forEach((horse, index) => {
+                const item = document.createElement('div');
+                item.className = 'horse-item';
+                // 調子 4, 5 を UP、1, 2 を DOWN とする
+                const condClass = horse.condition >= 4 ? 'condition-up' : (horse.condition <= 2 ? 'condition-down' : '');
+
+                const placements = (state.recentPlacements && state.recentPlacements[horse.id]) ? state.recentPlacements[horse.id] : [];
+                const placeText = placements.length > 0
+                    ? placements.map(p => p <= 3 ? `<span style="color:var(--accent-gold); font-weight:bold;">${p}着</span>` : `${p}着`).join(' - ')
+                    : '初出走';
+
+                const getGrade = val => {
+                    if (val >= 115) return '<span style="color:#ff4500;font-weight:bold;">S</span>';
+                    if (val >= 100) return '<span style="color:#ff1493;font-weight:bold;">A</span>';
+                    if (val >= 85) return '<span style="color:#ff8c00;font-weight:bold;">B</span>';
+                    if (val >= 70) return '<span style="color:#32cd32;font-weight:bold;">C</span>';
+                    if (val >= 55) return '<span style="color:#1e90ff;font-weight:bold;">D</span>';
+                    return '<span style="color:#808080;font-weight:bold;">E</span>';
+                };
+
+                const aptHtml = horse.apt === 'G' ? '<span style="color:#7CFC00;">芝</span>' : '<span style="color:#DEB887;">ダ</span>';
+                const statsHtml = `[${aptHtml}/<span style="color:white">${horse.type}</span>] SP:${getGrade(horse.speed)} ST:${getGrade(horse.stamina)} GT:${getGrade(horse.guts)}`;
+
+                item.innerHTML = `
             <div>${index + 1}</div>
             <div>
                 <div style="font-weight:bold; font-size:1.0rem; margin-bottom:2px;">${horse.name}</div>
@@ -322,394 +417,592 @@ function renderPaddock() {
             <div class="${condClass}" style="text-align:center; font-size:1.2rem;">${horse.conditionTxt}</div>
             <div id="odds-${horse.id}">--</div>
         `;
-        entryList.appendChild(item);
-    });
+                entryList.appendChild(item);
+            });
 
-    // 履歴を表示
-    renderHistory();
-}
+            // 履歴を表示
+            renderHistory();
+        }
 
-function renderHistory() {
-    let historyEl = document.getElementById('race-history-list');
-    if (!historyEl) {
-        const container = document.createElement('div');
-        container.className = 'glass-card';
-        container.style.marginTop = '2rem';
-        container.innerHTML = `
+        function renderHistory() {
+            let historyEl = document.getElementById('race-history-list');
+            if (!historyEl) {
+                const container = document.createElement('div');
+                container.className = 'glass-card';
+                container.style.marginTop = '2rem';
+                container.innerHTML = `
             <h3>過去5試合の結果</h3>
             <div id="race-history-list" style="font-size: 0.85rem; color: #ccc;">
             </div>
         `;
-        entryList.parentElement.appendChild(container);
-        historyEl = document.getElementById('race-history-list');
-    }
+                entryList.parentElement.appendChild(container);
+                historyEl = document.getElementById('race-history-list');
+            }
 
-    if (state.recentResults.length === 0) {
-        historyEl.innerHTML = '<p>まだレース履歴がありません。</p>';
-        return;
-    }
+            if (state.recentResults.length === 0) {
+                historyEl.innerHTML = '<p>まだレース履歴がありません。</p>';
+                return;
+            }
 
-    historyEl.innerHTML = state.recentResults.slice().reverse().map((res, i) => `
+            historyEl.innerHTML = state.recentResults.slice().reverse().map((res, i) => `
         <div style="border-bottom: 1px solid #444; padding: 8px 0;">
             <div style="color: var(--accent-gold); font-weight: bold;">[RACE ${state.recentResults.length - i}]</div>
             1着: ${res.winner} / 2着: ${res.runnerUp} / 3着: ${res.third}
         </div>
     `).join('');
-}
-
-// --- Odds (Parimutuel Simulation) ---
-function calculateOdds() {
-    const totalPool = { win: 0, quinella: 0 };
-    const horseBets = {};
-    const quinellaBets = {};
-
-    state.currentRace.entries.forEach(h => {
-        const weight = h.popBase * (0.8 + (h.condition * 0.1));
-        const npcBet = Math.floor(weight * 100);
-        horseBets[h.id] = npcBet;
-        totalPool.win += npcBet;
-    });
-
-    for(let i=0; i<state.currentRace.entries.length; i++) {
-        for(let j=i+1; j<state.currentRace.entries.length; j++) {
-            const h1 = state.currentRace.entries[i];
-            const h2 = state.currentRace.entries[j];
-            const key = `${Math.min(h1.id, h2.id)}-${Math.max(h1.id, h2.id)}`;
-            const weight = (h1.popBase + h2.popBase) / 2 * (0.8 + (h1.condition + h2.condition) * 0.05);
-            const npcBet = Math.floor(weight * 50);
-            quinellaBets[key] = npcBet;
-            totalPool.quinella += npcBet;
         }
-    }
 
-    state.currentRace.odds = { win: {}, quinella: {} };
-    
-    state.currentRace.entries.forEach((h, index) => {
-        const odds = (totalPool.win * 0.8) / horseBets[h.id];
-        h.currentOdds = Math.max(1.1, odds).toFixed(1);
-        state.currentRace.odds.win[index + 1] = h.currentOdds; // インデックスを使用
-        const oddsEl = document.getElementById(`odds-${h.id}`);
-        if(oddsEl) oddsEl.innerText = `${h.currentOdds}x`;
-    });
+        // --- Odds (Parimutuel Simulation) ---
+        function calculateOdds() {
+            const weights = state.currentRace.entries.map(h => h.popBase * (0.8 + (h.condition * 0.1)));
+            const totalWeight = weights.reduce((a, b) => a + b, 0);
+            const p = weights.map(w => w / totalWeight);
 
-    for(let key in quinellaBets) {
-        const odds = (totalPool.quinella * 0.75) / quinellaBets[key];
-        // キーを出走順序ベースに変更
-        const horseIndices = key.split('-').map(id => state.currentRace.entries.findIndex(e => e.id == id) + 1).sort((a,b)=>a-b);
-        const orderKey = `${horseIndices[0]}-${horseIndices[1]}`;
-        state.currentRace.odds.quinella[orderKey] = Math.max(2.0, odds).toFixed(1);
-    }
-}
+            state.currentRace.odds = {
+                win: {}, place: {}, quinella: {}, exacta: {}, wide: {}, trio: {}, trifecta: {}
+            };
 
-// --- Betting UI ---
-let currentBetTab = 'win';
-function renderBettingInterface() {
-    const ui = document.getElementById('betting-interface');
-    ui.innerHTML = '';
-    
-    const tabs = document.createElement('div');
-    tabs.style.display = 'flex';
-    tabs.style.gap = '10px';
-    tabs.style.marginBottom = '10px';
-    ['win', 'quinella'].forEach(t => {
-        const btn = document.createElement('button');
-        btn.className = `btn ${currentBetTab === t ? 'active' : ''}`;
-        btn.innerText = t === 'win' ? '単勝' : '馬連';
-        btn.onclick = () => { currentBetTab = t; renderBettingInterface(); };
-        tabs.appendChild(btn);
-    });
-    ui.appendChild(tabs);
+            const exactaProb = (i, j) => p[i] * (p[j] / (1 - p[i]));
+            const trifectaProb = (i, j, k) => p[i] * (p[j] / (1 - p[i])) * (p[k] / (1 - p[i] - p[j]));
 
-    const list = document.createElement('div');
-    list.className = 'horse-list';
-    
-    if (currentBetTab === 'win') {
-        state.currentRace.entries.forEach((h, index) => {
-            const div = document.createElement('div');
-            div.className = 'horse-item';
-            div.innerHTML = `
-                <div>${index + 1}</div> <div>${h.name}</div>
-                <div style="color:var(--accent-gold)">${h.currentOdds}x</div>
-                <input type="number" min="0" placeholder="金額" class="bet-input" data-type="win" data-id="${index + 1}" style="width:100%; padding:4px; background:#333; color:white; border:1px solid #555;">
-            `;
-            list.appendChild(div);
-        });
-    } else {
-        const combinations = [];
-        for(let i=0; i<state.currentRace.entries.length; i++) {
-            for(let j=i+1; j<state.currentRace.entries.length; j++) {
-                const h1Index = i + 1;
-                const h2Index = j + 1;
-                const key = `${h1Index}-${h2Index}`;
-                combinations.push({ key, name: `${h1Index}-${h2Index}`, odds: state.currentRace.odds.quinella[key] });
-            }
-        }
-        combinations.sort((a,b) => a.odds - b.odds).slice(0, 15).forEach(c => {
-            const div = document.createElement('div');
-            div.className = 'horse-item';
-            div.innerHTML = `
-                <div>${c.name}</div> <div>馬連</div>
-                <div style="color:var(--accent-gold)">${c.odds}x</div>
-                <input type="number" min="0" placeholder="枚" class="bet-input" data-type="quinella" data-id="${c.key}" style="width:100%; padding:4px; background:#333; color:white; border:1px solid #555;">
-            `;
-            list.appendChild(div);
-        });
-    }
-    ui.appendChild(list);
-}
-
-// Override switchScreen for betting
-const originalSwitchScreen = switchScreen;
-switchScreen = function(screenId) {
-    if (screenId === 'betting-screen') renderBettingInterface();
-    originalSwitchScreen(screenId);
-}
-
-// --- Race Engine ---
-let raceId = null;
-function startRace() {
-    const inputs = document.querySelectorAll('.bet-input');
-    state.bets = [];
-    inputs.forEach(input => {
-        const amount = parseInt(input.value) || 0;
-        if (amount > 0) {
-            if (state.coins < amount) {
-                alert("コインが足りません！");
-                return;
-            }
-            state.coins -= amount;
-            state.bets.push({ type: input.dataset.type, id: input.dataset.id, amount: amount });
-        }
-    });
-
-    updateUI();
-    saveGame(); // オートセーブ
-    switchScreen('race-screen');
-    runRaceSimulation();
-}
-
-function runRaceSimulation() {
-    const canvas = document.getElementById('race-canvas');
-    const ctx = canvas.getContext('2d');
-    const commentary = document.getElementById('commentary');
-    const finishLineX = canvas.parentElement.clientWidth * 0.85;
-    
-    // キャンバスのサイズ設定
-    canvas.width = canvas.parentElement.clientWidth;
-    canvas.height = canvas.parentElement.clientHeight;
-
-    const entries = state.currentRace.entries.map((h, i) => ({
-        ...h,
-        progress: 0, // 0 to 100
-        finished: false,
-        rank: 0,
-        power: ((h.speed * state.currentRace.type.spWeight) + (h.stamina * state.currentRace.type.stWeight) + (h.guts * state.currentRace.type.gtWeight)) * (0.9 + h.condition * 0.05),
-        entryNo: i + 1
-    }));
-
-    let finishedCount = 0;
-    const barHeight = 25;
-    const spacing = (canvas.height - 60) / 8;
-
-    function animate() {
-        ctx.fillStyle = "#111"; // 背景を少し暗く
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // ゴールライン
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-        ctx.setLineDash([5, 5]);
-        ctx.beginPath();
-        ctx.moveTo(finishLineX, 0);
-        ctx.lineTo(finishLineX, canvas.height);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        entries.forEach((h, i) => {
-            if (!h.finished) {
-                // スピードをさらに落とす (/1000 -> /2500)
-                let step = (h.power / 2500); 
+            for (let i = 0; i < 8; i++) {
+                const h = state.currentRace.entries[i];
+                const e1 = i + 1;
                 
-                // 区間ごとの脚質の有利
-                if (h.type === "逃" && h.progress < 40) step *= 1.2;
-                if (h.type === "追" && h.progress > 70) step *= 1.5;
+                const winOdds = Math.max(1.1, 0.8 / p[i]);
+                state.currentRace.odds.win[e1] = winOdds.toFixed(1);
+                state.currentRace.odds.place[e1] = Math.max(1.1, winOdds / 3.0).toFixed(1);
                 
-                // ランダムな揺らぎ（接戦演出）
-                h.progress += step + (Math.random() * 0.1);
+                h.currentOdds = state.currentRace.odds.win[e1];
+                const oddsEl = document.getElementById(`odds-${h.id}`);
+                if (oddsEl) oddsEl.innerText = `${h.currentOdds}x`;
 
-                if (h.progress >= 100) {
-                    h.finished = true;
-                    h.rank = ++finishedCount;
-                    h.progress = 100;
+                for (let j = 0; j < 8; j++) {
+                    if (i === j) continue;
+                    const e2 = j + 1;
+                    const exP = exactaProb(i, j);
+                    state.currentRace.odds.exacta[`${e1}-${e2}`] = Math.max(2.0, 0.75 / exP).toFixed(1);
+
+                    for (let k = 0; k < 8; k++) {
+                        if (i === k || j === k) continue;
+                        const e3 = k + 1;
+                        const triP = trifectaProb(i, j, k);
+                        state.currentRace.odds.trifecta[`${e1}-${e2}-${e3}`] = Math.max(5.0, 0.7 / triP).toFixed(1);
+                    }
                 }
             }
 
-            const y = 40 + i * spacing;
-            const currentWidth = (h.progress / 100) * finishLineX;
-            
-            // 棒の描画
-            ctx.fillStyle = h.color;
-            ctx.fillRect(100, y, currentWidth, barHeight);
-            
-            // 出走番号と馬名
-            ctx.fillStyle = "white";
-            ctx.font = "bold 13px sans-serif";
-            ctx.textAlign = "right";
-            ctx.fillText(`${h.entryNo}. ${h.name.substring(0,6)}`, 90, y + 17);
-            
-            // 順位表示
-            if (h.finished) {
-                ctx.textAlign = "left";
-                ctx.fillStyle = h.rank === 1 ? "gold" : "white";
-                ctx.fillText(`${h.rank}着`, 110 + currentWidth, y + 17);
-            }
-        });
+            for (let i = 0; i < 8; i++) {
+                for (let j = i + 1; j < 8; j++) {
+                    const e1 = i + 1;
+                    const e2 = j + 1;
+                    const qProb = exactaProb(i, j) + exactaProb(j, i);
+                    state.currentRace.odds.quinella[`${e1}-${e2}`] = Math.max(2.0, 0.75 / qProb).toFixed(1);
+                    state.currentRace.odds.wide[`${e1}-${e2}`] = Math.max(1.2, (0.75 / qProb) / 3.0).toFixed(1);
 
-        // 実況
-        const leader = [...entries].sort((a,b) => b.progress - a.progress)[0];
-        if (leader.progress < 50) commentary.innerText = `実況: 最初は緩やかな立ち上がり... 先頭は${leader.name}！`;
-        else if (leader.progress < 90) commentary.innerText = `実況: 勝負どころ！ 各馬一斉にスパート！`;
-        else commentary.innerText = `実況: さあ直線！ 接戦です！`;
-
-        if (finishedCount < entries.length) {
-            raceId = requestAnimationFrame(animate);
-        } else {
-            // 少し待ってから結果発表
-            setTimeout(() => {
-                showResult(entries.sort((a,b) => a.rank - b.rank));
-            }, 1000);
-        }
-    }
-
-    animate();
-}
-
-function showResult(sortedEntries) {
-    const winner = sortedEntries[0];
-    const second = sortedEntries[1];
-    document.getElementById('winner-announce').innerText = `1着: ${winner.name}\n2着: ${second.name}`;
-
-    // 履歴に追加 (上位3着)
-    state.recentResults.push({
-        winner: winner.name,
-        runnerUp: second.name,
-        third: sortedEntries[2].name
-    });
-    if (state.recentResults.length > 5) state.recentResults.shift();
-
-    // 各馬の近走成績を記録
-    if (!state.recentPlacements) state.recentPlacements = {};
-    sortedEntries.forEach((h, i) => {
-        if (!state.recentPlacements[h.id]) state.recentPlacements[h.id] = [];
-        state.recentPlacements[h.id].unshift(i + 1); // 1番前に最新の結果を追加
-        if (state.recentPlacements[h.id].length > 5) state.recentPlacements[h.id].pop();
-    });
-
-    let totalPayout = 0;
-    state.bets.forEach(bet => {
-        if (bet.type === 'win') {
-            const winnerIdx = winner.entryNo;
-            if (parseInt(bet.id) === winnerIdx) {
-                totalPayout += Math.floor(bet.amount * parseFloat(state.currentRace.odds.win[winnerIdx]));
-            }
-        } else if (bet.type === 'quinella') {
-            const w1Idx = winner.entryNo;
-            const w2Idx = second.entryNo; 
-            const combo = [w1Idx, w2Idx].sort((a,b)=>a-b);
-            const key = `${combo[0]}-${combo[1]}`;
-            if (bet.id === key) {
-                totalPayout += Math.floor(bet.amount * parseFloat(state.currentRace.odds.quinella[key]));
+                    for (let k = j + 1; k < 8; k++) {
+                        const e3 = k + 1;
+                        const perms = [[i,j,k], [i,k,j], [j,i,k], [j,k,i], [k,i,j], [k,j,i]];
+                        let tProb = 0;
+                        perms.forEach(perm => tProb += trifectaProb(perm[0], perm[1], perm[2]));
+                        state.currentRace.odds.trio[`${e1}-${e2}-${e3}`] = Math.max(3.0, 0.75 / tProb).toFixed(1);
+                    }
+                }
             }
         }
-    });
 
-    state.raceCount = (state.raceCount || 0) + 1;
-    state.coins += totalPayout;
-    document.getElementById('payout-amount').innerText = totalPayout;
-    
-    updateUI();
-    saveGame();
-    switchScreen('result-screen');
-    
-    document.getElementById('next-race-btn').onclick = () => {
-        prepareRace();
-        switchTab('nav-race');
-    };
-}
+        // --- Betting UI ---
+        let currentBetTab = 'win';
 
-// --- Utils ---
-function updateUI() {
-    coinLabel.innerText = state.coins.toLocaleString();
-    const raceCountEl = document.getElementById('race-count-display');
-    if (raceCountEl) raceCountEl.innerText = state.raceCount || 0;
-
-    if (state.coins >= 10000 && !state.gameCleared) {
-        state.gameCleared = true;
-        setTimeout(() => {
-            alert(`おめでとうございます！\n${state.raceCount || 0}回のレースで10,000コインを達成しました！`);
-        }, 500);
-    }
-}
-
-function saveGame() {
-    try {
-        localStorage.setItem('horse-racing-save', JSON.stringify(state));
-    } catch (e) {
-        console.error("Save failed:", e);
-    }
-}
-
-function loadGame() {
-    try {
-        const saved = localStorage.getItem('horse-racing-save');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            state = { ...state, ...parsed };
-            console.log("Game Loaded Successfully");
-        } else {
-            // 初めてのプレイ時のみ10コイン
-            state.coins = 10;
+        function updateBetAmount(type, id, val) {
+            const amt = parseInt(val) || 0;
+            if (amt > 0) betSelections.amounts[type + '_' + id] = amt;
+            else delete betSelections.amounts[type + '_' + id];
         }
-    } catch (e) {
-        console.warn("Load failed or no save data:", e);
-    }
 
-    // 初期の過去5レース結果（予想指標用）を用意する
-    if (state.recentResults.length === 0) {
-        for (let i = 0; i < 5; i++) {
-            let mockRace = [...HORSES].sort(() => 0.5 - Math.random()).slice(0, 8);
-            // 内部的な強さにランダム要素を足して順位を決定
-            mockRace.forEach(m => m.tempScore = ((m.speed + m.stamina + m.guts) / 3) + Math.random() * 30);
-            mockRace.sort((a, b) => b.tempScore - a.tempScore);
-            state.recentResults.push({
-                winner: mockRace[0].name,
-                runnerUp: mockRace[1].name,
-                third: mockRace[2].name
+        function setBettingSort(mode) {
+            betSelections.sortMode = mode;
+            renderBettingInterface();
+        }
+
+        function selectBetHorse(level, h) {
+            if (level === 1) {
+                betSelections.h1 = h;
+                if (betSelections.h2 === h) betSelections.h2 = null;
+            } else if (level === 2) {
+                betSelections.h2 = h;
+                if (betSelections.h1 === h) betSelections.h1 = null;
+            }
+            renderBettingInterface();
+        }
+
+        function getHorseBtnHtml(level, activeNum, excludeNum) {
+            let html = '<div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">';
+            for (let i = 1; i <= 8; i++) {
+                if (i === excludeNum) continue;
+                const isActive = (i === activeNum);
+                const bg = isActive ? 'var(--accent-gold)' : '#222';
+                const col = isActive ? '#000' : '#fff';
+                const border = isActive ? 'border-color:var(--accent-gold);' : '';
+                html += `<button class="btn" style="width:40px; height:40px; border-radius:50%; padding:0; background:${bg}; color:${col}; ${border}" onclick="selectBetHorse(${level}, ${i})">${i}</button>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        const TABS_DEF = [
+            { id: 'win', label: '単勝', desc: '1着になる馬を当てる馬券です。' },
+            { id: 'place', label: '複勝', desc: '選んだ馬が3着以内に入れば的中の馬券です。' },
+            { id: 'quinella', label: '馬連', desc: '1・2着になる2頭を順不同で当てる馬券です。' },
+            { id: 'exacta', label: '馬単', desc: '1・2着の馬を着順通りに当てる馬券です。' },
+            { id: 'wide', label: 'ワイド', desc: '選んだ2頭が両方とも3着以内に入れば的中です。' },
+            { id: 'trio', label: '3連複', desc: '1・2・3着の組み合わせを順不同で当てる馬券です。' },
+            { id: 'trifecta', label: '3連単', desc: '1・2・3着の馬を着順通りに当てる馬券です。' }
+        ];
+
+        function renderBettingInterface() {
+            const ui = document.getElementById('betting-interface');
+            ui.innerHTML = '';
+
+            const tabs = document.createElement('div');
+            tabs.style.display = 'flex';
+            tabs.style.flexWrap = 'wrap';
+            tabs.style.gap = '5px';
+            tabs.style.marginBottom = '10px';
+            TABS_DEF.forEach(t => {
+                const btn = document.createElement('button');
+                btn.className = `btn ${currentBetTab === t.id ? 'active' : ''}`;
+                btn.innerText = t.label;
+                btn.style.padding = '0.5rem';
+                btn.style.fontSize = '0.85rem';
+                btn.onclick = () => { 
+                    currentBetTab = t.id; 
+                    betSelections.h1 = null; 
+                    betSelections.h2 = null; 
+                    renderBettingInterface(); 
+                };
+                tabs.appendChild(btn);
             });
-        }
-    }
+            ui.appendChild(tabs);
 
-    // 初期の近走成績（各馬の個別データ）を用意する
-    if (!state.recentPlacements || Object.keys(state.recentPlacements).length === 0) {
-        state.recentPlacements = {};
-        HORSES.forEach(h => {
-            const places = [];
-            const strengthVal = (h.speed + h.stamina + h.guts) / 3;
-            for(let i=0; i<5; i++) {
-                // 強さに応じてランダムな着順を生成 (強いほど上に、弱いほど下に)
-                // ステータス平均は 40〜120 程度
-                let baseRank = 8 - (strengthVal - 40) / 10;
-                let rank = Math.round(baseRank + (Math.random() * 4 - 2));
-                rank = Math.max(1, Math.min(8, rank));
-                places.push(rank);
+            const activeDef = TABS_DEF.find(t => t.id === currentBetTab);
+            const desc = document.createElement('div');
+            desc.style.fontSize = '0.85rem';
+            desc.style.color = '#ccc';
+            desc.style.marginBottom = '10px';
+            desc.style.backgroundColor = 'rgba(0,0,0,0.2)';
+            desc.style.padding = '8px';
+            desc.style.borderRadius = '4px';
+            desc.innerText = `💡 ${activeDef.desc}`;
+            ui.appendChild(desc);
+
+            const isSingle = (currentBetTab === 'win' || currentBetTab === 'place');
+            const isDouble = (currentBetTab === 'quinella' || currentBetTab === 'exacta' || currentBetTab === 'wide');
+            const isTriple = (currentBetTab === 'trio' || currentBetTab === 'trifecta');
+
+            const filtersContainer = document.createElement('div');
+            let filterHtml = `
+                <div style="margin-bottom:15px; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: ${isSingle?'0':'12px'};">
+                        <span style="font-size:0.9rem; color:#aaa;">並び順:</span>
+                        <div>
+                            <button class="btn" style="padding:4px 10px; font-size:0.8rem; ${betSelections.sortMode==='number'?'background:var(--accent-gold); color:#000;':''}" onclick="setBettingSort('number')">番号順</button>
+                            <button class="btn" style="padding:4px 10px; font-size:0.8rem; ${betSelections.sortMode==='odds'?'background:var(--accent-gold); color:#000;':''}" onclick="setBettingSort('odds')">オッズ順</button>
+                        </div>
+                    </div>
+            `;
+
+            if (isDouble || isTriple) {
+                filterHtml += `
+                    <div style="margin-bottom:10px;">
+                        <div style="font-size:0.8rem; margin-bottom:5px; color:#aaa; text-align:center;">
+                            ${currentBetTab==='exacta'?'1着にする馬を選択:':'1頭目を選択:'}
+                        </div>
+                        ${getHorseBtnHtml(1, betSelections.h1, null)}
+                    </div>
+                `;
             }
-            state.recentPlacements[h.id] = places;
-        });
-        saveGame();
-    }
-}
 
-// Start
-init();
+            if (isTriple && betSelections.h1) {
+                filterHtml += `
+                    <div>
+                        <div style="font-size:0.8rem; margin-bottom:5px; color:#aaa; text-align:center;">
+                            ${currentBetTab==='trifecta'?'2着にする馬を選択:':'2頭目を選択:'}
+                        </div>
+                        ${getHorseBtnHtml(2, betSelections.h2, betSelections.h1)}
+                    </div>
+                `;
+            }
+
+            filterHtml += `</div>`;
+            filtersContainer.innerHTML = filterHtml;
+            ui.appendChild(filtersContainer);
+
+            if (!state.currentRace.odds.exacta) calculateOdds();
+
+            const oddsDict = state.currentRace.odds[currentBetTab];
+            const combinations = [];
+            
+            let showList = true;
+            if (isDouble && !betSelections.h1) showList = false;
+            if (isTriple && (!betSelections.h1 || !betSelections.h2)) showList = false;
+
+            if (showList) {
+                for (let key in oddsDict) {
+                    let parts = key.split('-').map(Number);
+                    let match = true;
+                    if (isDouble) {
+                        if (currentBetTab === 'exacta') {
+                            if (parts[0] !== betSelections.h1) match = false;
+                        } else {
+                            if (!parts.includes(betSelections.h1)) match = false;
+                        }
+                    } else if (isTriple) {
+                        if (currentBetTab === 'trifecta') {
+                            if (parts[0] !== betSelections.h1 || parts[1] !== betSelections.h2) match = false;
+                        } else {
+                            if (!parts.includes(betSelections.h1) || !parts.includes(betSelections.h2)) match = false;
+                        }
+                    }
+                    if (match) combinations.push({ key, odds: parseFloat(oddsDict[key]), parts });
+                }
+
+                combinations.sort((a, b) => {
+                    if (betSelections.sortMode === 'odds') {
+                        return a.odds - b.odds;
+                    } else {
+                        for(let i=0; i<a.parts.length; i++) {
+                            if(a.parts[i] !== b.parts[i]) return a.parts[i] - b.parts[i];
+                        }
+                        return 0;
+                    }
+                });
+
+                const list = document.createElement('div');
+                list.className = 'horse-list';
+                
+                combinations.forEach(c => {
+                    const div = document.createElement('div');
+                    div.className = 'horse-item';
+                    
+                    let nameHtml = "";
+                    if (currentBetTab === 'win' || currentBetTab === 'place') {
+                        const h = state.currentRace.entries[parseInt(c.key) - 1];
+                        nameHtml = `<div>${c.key}</div> <div style="font-weight:bold;">${h ? h.name : ''}</div>`;
+                        div.style.gridTemplateColumns = '30px 1fr 60px 80px';
+                    } else {
+                        let joinText = (currentBetTab === 'exacta' || currentBetTab === 'trifecta') ? ' <span style="color:#666">→</span> ' : ' <span style="color:#666">-</span> ';
+                        let parts = c.key.split('-');
+                        const formatted = parts.map(n => `<span style="display:inline-block; width:18px; text-align:center; background:#444; border-radius:3px; padding:2px;">${n}</span>`).join(joinText);
+                        nameHtml = `<div style="grid-column: span 2;">${formatted}</div>`;
+                        div.style.gridTemplateColumns = '1fr 60px 80px';
+                    }
+                    
+                    div.innerHTML = `
+                        ${nameHtml}
+                        <div style="color:var(--accent-gold); text-align:right;">${c.odds.toFixed(1)}x</div>
+                        <input type="number" min="0" placeholder="0" class="bet-input" data-type="${currentBetTab}" data-id="${c.key}" 
+                            value="${betSelections.amounts[currentBetTab + '_' + c.key] || ''}"
+                            oninput="updateBetAmount('${currentBetTab}', '${c.key}', this.value)"
+                            style="width:100%; padding:6px; background:#333; color:white; border:1px solid #555; text-align:right; border-radius:4px;">
+                    `;
+                    list.appendChild(div);
+                });
+                ui.appendChild(list);
+            }
+        }
+
+
+        // Override switchScreen for betting
+        const originalSwitchScreen = switchScreen;
+        switchScreen = function (screenId) {
+            if (screenId === 'betting-screen') renderBettingInterface();
+            originalSwitchScreen(screenId);
+        }
+
+        // --- Race Engine ---
+        let raceId = null;
+        function startRace() {
+            let totalBet = 0;
+            state.bets = [];
+            
+            for (let key in betSelections.amounts) {
+                const amt = parseInt(betSelections.amounts[key]) || 0;
+                if (amt > 0) {
+                    totalBet += amt;
+                    const parts = key.split('_'); // [type, id] like ['exacta', '1-2']
+                    state.bets.push({ type: parts[0], id: parts[1], amount: amt });
+                }
+            }
+
+            if (totalBet > state.coins) {
+                alert("コインが足りません！");
+                return;
+            }
+
+            if (totalBet > 0) {
+                state.coins -= totalBet;
+            }
+
+            updateUI();
+            saveGame(); // オートセーブ
+            switchScreen('race-screen');
+            runRaceSimulation();
+        }
+
+        function runRaceSimulation() {
+            const canvas = document.getElementById('race-canvas');
+            const ctx = canvas.getContext('2d');
+            const commentary = document.getElementById('commentary');
+            const finishLineX = canvas.parentElement.clientWidth * 0.85;
+
+            // キャンバスのサイズ設定
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            const entries = state.currentRace.entries.map((h, i) => {
+                const surfaceMultiplier = (h.apt === state.currentRace.type.element) ? 1.15 : 0.85;
+                return {
+                    ...h,
+                    progress: 0, // 0 to 100
+                    finished: false,
+                    rank: 0,
+                    power: ((h.speed * state.currentRace.type.spWeight) + (h.stamina * state.currentRace.type.stWeight) + (h.guts * state.currentRace.type.gtWeight)) * (0.9 + h.condition * 0.05) * surfaceMultiplier,
+                    entryNo: i + 1
+                };
+            });
+
+            let finishedCount = 0;
+            const barHeight = 25;
+            const spacing = (canvas.height - 60) / 8;
+
+            function animate() {
+                ctx.fillStyle = "#111"; // 背景を少し暗く
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // ゴールライン
+                ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(finishLineX, 0);
+                ctx.lineTo(finishLineX, canvas.height);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                entries.forEach((h, i) => {
+                    if (!h.finished) {
+                        // スピードをさらに落とす (/1000 -> /2500) 倍速設定を反映
+                        let step = (h.power / 2500) * (state.raceSpeed || 1.0);
+
+                        // 区間ごとの脚質の有利
+                        if (h.type === "逃" && h.progress < 40) step *= 1.2;
+                        if (h.type === "追" && h.progress > 70) step *= 1.5;
+
+                        // ランダムな揺らぎ（接戦演出）
+                        h.progress += step + (Math.random() * 0.1 * (state.raceSpeed || 1.0));
+
+                        if (h.progress >= 100) {
+                            h.finished = true;
+                            h.rank = ++finishedCount;
+                            h.progress = 100;
+                        }
+                    }
+
+                    const y = 40 + i * spacing;
+                    const currentWidth = (h.progress / 100) * finishLineX;
+
+                    // 棒の描画
+                    ctx.fillStyle = h.color;
+                    ctx.fillRect(100, y, currentWidth, barHeight);
+
+                    // 出走番号と馬名
+                    ctx.fillStyle = "white";
+                    ctx.font = "bold 13px sans-serif";
+                    ctx.textAlign = "right";
+                    ctx.fillText(`${h.entryNo}. ${h.name.substring(0, 6)}`, 90, y + 17);
+
+                    // 順位表示
+                    if (h.finished) {
+                        ctx.textAlign = "left";
+                        ctx.fillStyle = h.rank === 1 ? "gold" : "white";
+                        ctx.fillText(`${h.rank}着`, 110 + currentWidth, y + 17);
+                    }
+                });
+
+                // 実況
+                const leader = [...entries].sort((a, b) => b.progress - a.progress)[0];
+                if (leader.progress < 50) commentary.innerText = `実況: 最初は緩やかな立ち上がり... 先頭は${leader.name}！`;
+                else if (leader.progress < 90) commentary.innerText = `実況: 勝負どころ！ 各馬一斉にスパート！`;
+                else commentary.innerText = `実況: さあ直線！ 接戦です！`;
+
+                if (finishedCount < entries.length) {
+                    raceId = requestAnimationFrame(animate);
+                } else {
+                    // 少し待ってから結果発表
+                    setTimeout(() => {
+                        showResult(entries.sort((a, b) => a.rank - b.rank));
+                    }, 1000);
+                }
+            }
+
+            animate();
+        }
+
+        function showResult(sortedEntries) {
+            const winner = sortedEntries[0];
+            const second = sortedEntries[1];
+            document.getElementById('winner-announce').innerText = `1着: ${winner.name}\n2着: ${second.name}`;
+
+            // 履歴に追加 (上位3着)
+            state.recentResults.push({
+                winner: winner.name,
+                runnerUp: second.name,
+                third: sortedEntries[2].name
+            });
+            if (state.recentResults.length > 5) state.recentResults.shift();
+
+            // 各馬の近走成績を記録
+            if (!state.recentPlacements) state.recentPlacements = {};
+            sortedEntries.forEach((h, i) => {
+                if (!state.recentPlacements[h.id]) state.recentPlacements[h.id] = [];
+                state.recentPlacements[h.id].unshift(i + 1); // 1番前に最新の結果を追加
+                if (state.recentPlacements[h.id].length > 5) state.recentPlacements[h.id].pop();
+            });
+
+            let totalPayout = 0;
+            const w1 = winner.entryNo;
+            const w2 = second.entryNo;
+            const w3 = sortedEntries[2].entryNo;
+
+            state.bets.forEach(bet => {
+                const id = bet.id;
+                const amt = bet.amount;
+                let isWin = false;
+                let odds = 0;
+
+                if (bet.type === 'win' && parseInt(id) === w1) {
+                    isWin = true; odds = state.currentRace.odds.win[id];
+                } 
+                else if (bet.type === 'place' && [w1, w2, w3].includes(parseInt(id))) {
+                    isWin = true; odds = state.currentRace.odds.place[id];
+                }
+                else if (bet.type === 'exacta' && id === `${w1}-${w2}`) {
+                    isWin = true; odds = state.currentRace.odds.exacta[id];
+                }
+                else if (bet.type === 'quinella') {
+                    const combo = [w1, w2].sort((a,b)=>a-b).join('-');
+                    if (id === combo) { isWin = true; odds = state.currentRace.odds.quinella[id]; }
+                }
+                else if (bet.type === 'wide') {
+                    const wCombos = [
+                        [w1, w2].sort((a,b)=>a-b).join('-'),
+                        [w1, w3].sort((a,b)=>a-b).join('-'),
+                        [w2, w3].sort((a,b)=>a-b).join('-')
+                    ];
+                    if (wCombos.includes(id)) { isWin = true; odds = state.currentRace.odds.wide[id]; }
+                }
+                else if (bet.type === 'trifecta' && id === `${w1}-${w2}-${w3}`) {
+                    isWin = true; odds = state.currentRace.odds.trifecta[id];
+                }
+                else if (bet.type === 'trio') {
+                    const combo = [w1, w2, w3].sort((a,b)=>a-b).join('-');
+                    if (id === combo) { isWin = true; odds = state.currentRace.odds.trio[id]; }
+                }
+
+                if (isWin) {
+                    totalPayout += Math.floor(amt * parseFloat(odds));
+                }
+            });
+
+            state.raceCount = (state.raceCount || 0) + 1;
+            state.coins += totalPayout;
+            document.getElementById('payout-amount').innerText = totalPayout;
+
+            updateUI();
+            saveGame();
+            switchScreen('result-screen');
+
+            document.getElementById('next-race-btn').onclick = () => {
+                prepareRace();
+                switchScreen('paddock-screen');
+            };
+        }
+
+        // --- Utils ---
+        function updateUI() {
+            coinLabel.innerText = state.coins.toLocaleString();
+            const raceCountEl = document.getElementById('race-count-display');
+            if (raceCountEl) raceCountEl.innerText = state.raceCount || 0;
+
+            if (state.coins >= 10000 && !state.gameCleared) {
+                state.gameCleared = true;
+                setTimeout(() => {
+                    alert(`おめでとうございます！\n${state.raceCount || 0}回のレースで10,000コインを達成しました！`);
+                }, 500);
+            }
+        }
+
+        function saveGame() {
+            try {
+                localStorage.setItem('horse-racing-save', JSON.stringify(state));
+            } catch (e) {
+                console.error("Save failed:", e);
+            }
+        }
+
+        function loadGame() {
+            try {
+                const saved = localStorage.getItem('horse-racing-save');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    state = { ...state, ...parsed };
+                    console.log("Game Loaded Successfully");
+                } else {
+                    // 初めてのプレイ時のみ10コイン
+                    state.coins = 10;
+                }
+            } catch (e) {
+                console.warn("Load failed or no save data:", e);
+            }
+
+            // 初期の過去5レース結果（予想指標用）を用意する
+            if (state.recentResults.length === 0) {
+                for (let i = 0; i < 5; i++) {
+                    let mockRace = [...HORSES].sort(() => 0.5 - Math.random()).slice(0, 8);
+                    // 内部的な強さにランダム要素を足して順位を決定
+                    mockRace.forEach(m => m.tempScore = ((m.speed + m.stamina + m.guts) / 3) + Math.random() * 30);
+                    mockRace.sort((a, b) => b.tempScore - a.tempScore);
+                    state.recentResults.push({
+                        winner: mockRace[0].name,
+                        runnerUp: mockRace[1].name,
+                        third: mockRace[2].name
+                    });
+                }
+            }
+
+            // 初期の近走成績（各馬の個別データ）を用意する
+            if (!state.recentPlacements || Object.keys(state.recentPlacements).length === 0) {
+                state.recentPlacements = {};
+                HORSES.forEach(h => {
+                    const places = [];
+                    const strengthVal = (h.speed + h.stamina + h.guts) / 3;
+                    for (let i = 0; i < 5; i++) {
+                        // 強さに応じてランダムな着順を生成 (強いほど上に、弱いほど下に)
+                        // ステータス平均は 40〜120 程度
+                        let baseRank = 8 - (strengthVal - 40) / 10;
+                        let rank = Math.round(baseRank + (Math.random() * 4 - 2));
+                        rank = Math.max(1, Math.min(8, rank));
+                        places.push(rank);
+                    }
+                    state.recentPlacements[h.id] = places;
+                });
+                saveGame();
+            }
+        }
+
+        // Start
+        init();
     </script>
 </body>
+
 </html>
