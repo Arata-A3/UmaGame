@@ -5,8 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UmaGame</title>
-    <link rel="icon" href="icon.jpeg" type="image/jpeg">
-    <link rel="apple-touch-icon" href="icon.jpeg">
+    <meta name="description" content="競馬ゲーム『UmaGame』">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="icon" href="assets/icon.jpeg" type="image/jpeg">
+    <link rel="apple-touch-icon" href="assets/icon.jpeg">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Inter:wght@400;700&display=swap"
@@ -61,6 +63,14 @@
                         <button id="speed-20-btn" class="btn speed-btn"
                             style="flex:1; padding:0.8rem; font-size:0.9rem;">2.0x</button>
                     </div>
+                </div>
+
+                <div id="install-container"
+                    style="display:none; margin: 1.5rem 0; padding:1.5rem; background:rgba(212,175,55,0.1); border-radius:8px; border:1px solid var(--accent-gold);">
+                    <h3 style="margin-bottom: 1rem; color:var(--accent-gold); font-size:1.1rem;">アプリとしてインストール</h3>
+                    <p style="font-size:0.8rem; margin-bottom:1rem; color:#ccc;">PCやホーム画面に保存して、より快適にプレイできます。</p>
+                    <button id="install-app-btn" class="btn btn-primary"
+                        style="width:100%; padding:1rem;">アプリをインストール</button>
                 </div>
 
                 <div style="margin: 2rem 0; padding:1.5rem; background:rgba(255,0,0,0.1); border-radius:8px;">
@@ -120,7 +130,8 @@
 
         <!-- 画面4: レース実況 -->
         <section id="race-screen" class="screen">
-            <div id="race-view" style="position: relative; flex: 1; min-height: 400px; border-radius: 12px; overflow: hidden;">
+            <div id="race-view"
+                style="position: relative; flex: 1; min-height: 400px; border-radius: 12px; overflow: hidden;">
                 <canvas id="race-canvas"></canvas>
                 <div id="commentary"
                     style="position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 8px; font-size: 0.9rem;">
@@ -206,11 +217,11 @@
             lastConditions: {}, // { horseId: condition }
             recentResults: [], // [{ winner: "", runnerUp: "", third: "" }]
             recentPlacements: {}, // 馬ごとの近走成績 { horseId: [1, 2, 5...] }
-            raceCount: 0,
-            gameCleared: false,
+            raceCleared: false,
             raceSpeed: 1.0
         };
 
+        let deferredPrompt;
         const betSelections = { sortMode: 'number', h1: null, h2: null, amounts: {} };
 
         // --- Dom Elements ---
@@ -253,6 +264,32 @@
             // 初期化時はパドックのレースを準備してから、メニュー画面を表示
             prepareRace();
             setRaceSpeed(state.raceSpeed || 1.0); // 速度設定のUI初期化
+
+            // Service Worker Registration
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js')
+                        .then(reg => console.log('SW Registered!', reg))
+                        .catch(err => console.log('SW Registration failed', err));
+                });
+            }
+
+            // PWA Install Prompt handling
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                document.getElementById('install-container').style.display = 'block';
+            });
+
+            document.getElementById('install-app-btn').addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response to the install prompt: ${outcome}`);
+                    deferredPrompt = null;
+                    document.getElementById('install-container').style.display = 'none';
+                }
+            });
         }
 
         function setRaceSpeed(speed) {
@@ -468,11 +505,11 @@
             for (let i = 0; i < 8; i++) {
                 const h = state.currentRace.entries[i];
                 const e1 = i + 1;
-                
+
                 const winOdds = Math.max(1.1, 0.8 / p[i]);
                 state.currentRace.odds.win[e1] = winOdds.toFixed(1);
                 state.currentRace.odds.place[e1] = Math.max(1.1, winOdds / 3.0).toFixed(1);
-                
+
                 h.currentOdds = state.currentRace.odds.win[e1];
                 const oddsEl = document.getElementById(`odds-${h.id}`);
                 if (oddsEl) oddsEl.innerText = `${h.currentOdds}x`;
@@ -502,7 +539,7 @@
 
                     for (let k = j + 1; k < 8; k++) {
                         const e3 = k + 1;
-                        const perms = [[i,j,k], [i,k,j], [j,i,k], [j,k,i], [k,i,j], [k,j,i]];
+                        const perms = [[i, j, k], [i, k, j], [j, i, k], [j, k, i], [k, i, j], [k, j, i]];
                         let tProb = 0;
                         perms.forEach(perm => tProb += trifectaProb(perm[0], perm[1], perm[2]));
                         state.currentRace.odds.trio[`${e1}-${e2}-${e3}`] = Math.max(3.0, 0.75 / tProb).toFixed(1);
@@ -575,11 +612,11 @@
                 btn.innerText = t.label;
                 btn.style.padding = '0.5rem';
                 btn.style.fontSize = '0.85rem';
-                btn.onclick = () => { 
-                    currentBetTab = t.id; 
-                    betSelections.h1 = null; 
-                    betSelections.h2 = null; 
-                    renderBettingInterface(); 
+                btn.onclick = () => {
+                    currentBetTab = t.id;
+                    betSelections.h1 = null;
+                    betSelections.h2 = null;
+                    renderBettingInterface();
                 };
                 tabs.appendChild(btn);
             });
@@ -603,11 +640,11 @@
             const filtersContainer = document.createElement('div');
             let filterHtml = `
                 <div style="margin-bottom:15px; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: ${isSingle?'0':'12px'};">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: ${isSingle ? '0' : '12px'};">
                         <span style="font-size:0.9rem; color:#aaa;">並び順:</span>
                         <div>
-                            <button class="btn" style="padding:4px 10px; font-size:0.8rem; ${betSelections.sortMode==='number'?'background:var(--accent-gold); color:#000;':''}" onclick="setBettingSort('number')">番号順</button>
-                            <button class="btn" style="padding:4px 10px; font-size:0.8rem; ${betSelections.sortMode==='odds'?'background:var(--accent-gold); color:#000;':''}" onclick="setBettingSort('odds')">オッズ順</button>
+                            <button class="btn" style="padding:4px 10px; font-size:0.8rem; ${betSelections.sortMode === 'number' ? 'background:var(--accent-gold); color:#000;' : ''}" onclick="setBettingSort('number')">番号順</button>
+                            <button class="btn" style="padding:4px 10px; font-size:0.8rem; ${betSelections.sortMode === 'odds' ? 'background:var(--accent-gold); color:#000;' : ''}" onclick="setBettingSort('odds')">オッズ順</button>
                         </div>
                     </div>
             `;
@@ -616,7 +653,7 @@
                 filterHtml += `
                     <div style="margin-bottom:10px;">
                         <div style="font-size:0.8rem; margin-bottom:5px; color:#aaa; text-align:center;">
-                            ${currentBetTab==='exacta'?'1着にする馬を選択:':'1頭目を選択:'}
+                            ${currentBetTab === 'exacta' ? '1着にする馬を選択:' : '1頭目を選択:'}
                         </div>
                         ${getHorseBtnHtml(1, betSelections.h1, null)}
                     </div>
@@ -627,7 +664,7 @@
                 filterHtml += `
                     <div>
                         <div style="font-size:0.8rem; margin-bottom:5px; color:#aaa; text-align:center;">
-                            ${currentBetTab==='trifecta'?'2着にする馬を選択:':'2頭目を選択:'}
+                            ${currentBetTab === 'trifecta' ? '2着にする馬を選択:' : '2頭目を選択:'}
                         </div>
                         ${getHorseBtnHtml(2, betSelections.h2, betSelections.h1)}
                     </div>
@@ -642,7 +679,7 @@
 
             const oddsDict = state.currentRace.odds[currentBetTab];
             const combinations = [];
-            
+
             let showList = true;
             if (isDouble && !betSelections.h1) showList = false;
             if (isTriple && (!betSelections.h1 || !betSelections.h2)) showList = false;
@@ -671,8 +708,8 @@
                     if (betSelections.sortMode === 'odds') {
                         return a.odds - b.odds;
                     } else {
-                        for(let i=0; i<a.parts.length; i++) {
-                            if(a.parts[i] !== b.parts[i]) return a.parts[i] - b.parts[i];
+                        for (let i = 0; i < a.parts.length; i++) {
+                            if (a.parts[i] !== b.parts[i]) return a.parts[i] - b.parts[i];
                         }
                         return 0;
                     }
@@ -680,11 +717,11 @@
 
                 const list = document.createElement('div');
                 list.className = 'horse-list';
-                
+
                 combinations.forEach(c => {
                     const div = document.createElement('div');
                     div.className = 'horse-item';
-                    
+
                     let nameHtml = "";
                     if (currentBetTab === 'win' || currentBetTab === 'place') {
                         const h = state.currentRace.entries[parseInt(c.key) - 1];
@@ -697,7 +734,7 @@
                         nameHtml = `<div style="grid-column: span 2;">${formatted}</div>`;
                         div.style.gridTemplateColumns = '1fr 60px 80px';
                     }
-                    
+
                     div.innerHTML = `
                         ${nameHtml}
                         <div style="color:var(--accent-gold); text-align:right;">${c.odds.toFixed(1)}x</div>
@@ -725,7 +762,7 @@
         function startRace() {
             let totalBet = 0;
             state.bets = [];
-            
+
             for (let key in betSelections.amounts) {
                 const amt = parseInt(betSelections.amounts[key]) || 0;
                 if (amt > 0) {
@@ -882,7 +919,7 @@
 
                 if (bet.type === 'win' && parseInt(id) === w1) {
                     isWin = true; odds = state.currentRace.odds.win[id];
-                } 
+                }
                 else if (bet.type === 'place' && [w1, w2, w3].includes(parseInt(id))) {
                     isWin = true; odds = state.currentRace.odds.place[id];
                 }
@@ -890,14 +927,14 @@
                     isWin = true; odds = state.currentRace.odds.exacta[id];
                 }
                 else if (bet.type === 'quinella') {
-                    const combo = [w1, w2].sort((a,b)=>a-b).join('-');
+                    const combo = [w1, w2].sort((a, b) => a - b).join('-');
                     if (id === combo) { isWin = true; odds = state.currentRace.odds.quinella[id]; }
                 }
                 else if (bet.type === 'wide') {
                     const wCombos = [
-                        [w1, w2].sort((a,b)=>a-b).join('-'),
-                        [w1, w3].sort((a,b)=>a-b).join('-'),
-                        [w2, w3].sort((a,b)=>a-b).join('-')
+                        [w1, w2].sort((a, b) => a - b).join('-'),
+                        [w1, w3].sort((a, b) => a - b).join('-'),
+                        [w2, w3].sort((a, b) => a - b).join('-')
                     ];
                     if (wCombos.includes(id)) { isWin = true; odds = state.currentRace.odds.wide[id]; }
                 }
@@ -905,7 +942,7 @@
                     isWin = true; odds = state.currentRace.odds.trifecta[id];
                 }
                 else if (bet.type === 'trio') {
-                    const combo = [w1, w2, w3].sort((a,b)=>a-b).join('-');
+                    const combo = [w1, w2, w3].sort((a, b) => a - b).join('-');
                     if (id === combo) { isWin = true; odds = state.currentRace.odds.trio[id]; }
                 }
 

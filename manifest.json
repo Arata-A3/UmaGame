@@ -1,16 +1,24 @@
 {
-  "name": "Legend of Turf",
-  "short_name": "Turf",
-  "start_url": ".",
+  "name": "UmaGame",
+  "short_name": "UmaGame",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
+  "description": "競馬ゲーム『UmaGame』",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "icon.jpeg",
+      "src": "assets/icon.jpeg",
       "sizes": "192x192 512x512",
       "type": "image/jpeg",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon.jpeg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
     }
   ]
 }
