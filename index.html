@@ -254,7 +254,7 @@
 
         // --- Version ---
         // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
-        const APP_VERSION = '1.5.1';
+        const APP_VERSION = '1.6.0';
 
         // --- Application State ---
         let state = {
@@ -1352,11 +1352,12 @@
             const GATE_COLORS = ['#f5f5f5', '#222222', '#d83030', '#2f62d8', '#f0c419', '#2e9e46', '#f28a1e', '#f37ab7'];
             const GATE_TEXT = ['#000', '#fff', '#fff', '#fff', '#000', '#fff', '#000', '#000'];
             // 毛色（馬ごとに固定）
-            const COATS = ['#7b4a2a', '#9c5530', '#4a2e1e', '#2a2421', '#8f8f8f', '#b06a35'];
+            // [体の色, たてがみ・しっぽの色]（栗毛・鹿毛・白毛・青鹿毛・月毛・芦毛）
+            const COATS = [['#c98a5a', '#6b3f22'], ['#8b5a3c', '#3a2418'], ['#f2ebe1', '#b9aea0'], ['#5b4636', '#2a1d14'], ['#e3bf8a', '#fff3d6'], ['#b3b3bd', '#6d6d78']];
 
             entries.forEach(h => {
                 h.overrun = 0;
-                h.coat = COATS[h.id % COATS.length];
+                [h.coat, h.mane] = COATS[h.id % COATS.length];
             });
 
             // 馬券を買った馬
@@ -1660,124 +1661,183 @@
                 drawHud(w, order);
             }
 
-            // 馬と騎手の人形（右向きで描き、左向きは反転）
+            // 馬と騎手の人形（デフォルメした「ちび馬」。右向きで描き、左向きは反転）
+            // 座標は高さ約100の箱で、足元が y=0。size が画面上の高さ（px）
             function drawFigure(px, py, size, facing, horse, phase, pos) {
                 const s = size / 100;
+                const coat = horse.coat || COATS[0][0];
+                const line = '#3b2618';
                 ctx.save();
                 ctx.translate(px, py);
 
-                // 台座と影（人形らしさ）
-                ctx.fillStyle = 'rgba(0,0,0,0.35)';
-                ctx.beginPath(); ctx.ellipse(0, 0, 46 * s, 9 * s, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#3a3a3a';
-                ctx.beginPath(); ctx.ellipse(0, -2 * s, 30 * s, 6 * s, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#5a5a5a';
-                ctx.beginPath(); ctx.ellipse(0, -3 * s, 26 * s, 4 * s, 0, 0, Math.PI * 2); ctx.fill();
+                // 影と台座（おもちゃの人形らしさ）
+                ctx.fillStyle = 'rgba(0,0,0,0.28)';
+                ctx.beginPath(); ctx.ellipse(0, 0, 40 * s, 7 * s, 0, 0, Math.PI * 2); ctx.fill();
 
                 ctx.scale(facing * s, s);
-                const bob = Math.sin(phase * 2) * 1.5;
-                const outline = 'rgba(0,0,0,0.55)';
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                const bob = Math.abs(Math.sin(phase)) * -4; // ぴょこぴょこ跳ねる
+                const sw = Math.sin(phase);
 
-
-                const legColor = horse.coat;
-                function leg(hx, hy, angle, far) {
-                    const knee = { x: hx + Math.sin(angle) * 18, y: hy + Math.cos(angle) * 18 };
-                    const bend = angle > 0 ? -0.6 : 0.4;
-                    const hoof = { x: knee.x + Math.sin(angle + bend) * 18, y: knee.y + Math.cos(angle + bend) * 18 };
-                    ctx.strokeStyle = far ? 'rgba(0,0,0,0.45)' : legColor;
-                    ctx.lineWidth = 7;
-                    ctx.lineCap = 'round';
-                    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(knee.x, knee.y); ctx.lineTo(hoof.x, hoof.y); ctx.stroke();
-                    if (far) { ctx.strokeStyle = legColor; ctx.globalAlpha = 0.55; ctx.stroke(); ctx.globalAlpha = 1; }
+                // 短くて丸い脚
+                function leg(x, angle, far) {
+                    const top = -30 + bob;
+                    const len = 22;
+                    const fx = x + Math.sin(angle) * len, fy = top + Math.cos(angle) * len;
+                    ctx.strokeStyle = line;
+                    ctx.lineWidth = 13;
+                    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(fx, fy); ctx.stroke();
+                    ctx.strokeStyle = far ? shade(coat, -0.18) : coat;
+                    ctx.lineWidth = 10;
+                    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(fx, fy); ctx.stroke();
+                    // ひづめ
+                    ctx.fillStyle = '#4a3426';
+                    ctx.beginPath(); ctx.ellipse(fx, fy, 6, 4, 0, 0, Math.PI * 2); ctx.fill();
                 }
-                const sw = Math.sin(phase), sw2 = Math.sin(phase + 0.6);
-                const hipY = -40 + bob;
-                // 奥側の脚
-                leg(-24, hipY, -sw2 * 0.85, true);
-                leg(22, hipY, sw2 * 0.85, true);
+                leg(-16, -sw * 0.7, true);
+                leg(16, sw * 0.7, true);
 
-                // しっぽ
-                ctx.strokeStyle = '#1e1410';
-                ctx.lineWidth = 6;
-                ctx.beginPath();
-                ctx.moveTo(-36, -50 + bob);
-                ctx.quadraticCurveTo(-52, -52 + bob + sw * 3, -58, -36 + bob);
-                ctx.stroke();
+                // ふわふわのしっぽ
+                ctx.save();
+                ctx.translate(-30, -44 + bob);
+                ctx.rotate(-0.5 + Math.sin(phase * 1.3) * 0.25);
+                ctx.fillStyle = horse.mane;
+                ctx.strokeStyle = line;
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.ellipse(-12, 4, 15, 9, 0.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(-20, 12, 9, 6, 0.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.restore();
 
-                // 胴体
-                ctx.fillStyle = horse.coat;
-                ctx.strokeStyle = outline;
-                ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.ellipse(0, -50 + bob, 38, 15, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-
-                // 首と頭
-                ctx.beginPath();
-                ctx.moveTo(20, -60 + bob);
-                ctx.lineTo(44, -82 + bob);
-                ctx.lineTo(54, -76 + bob);
-                ctx.lineTo(34, -44 + bob);
-                ctx.closePath();
-                ctx.fill(); ctx.stroke();
-                ctx.beginPath(); ctx.ellipse(54, -78 + bob, 13, 7, 0.55, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                // 耳とたてがみ
-                ctx.beginPath(); ctx.moveTo(45, -86 + bob); ctx.lineTo(47, -95 + bob); ctx.lineTo(51, -86 + bob); ctx.closePath(); ctx.fill();
-                ctx.strokeStyle = '#1e1410';
-                ctx.lineWidth = 4;
-                ctx.beginPath(); ctx.moveTo(22, -62 + bob); ctx.lineTo(43, -85 + bob); ctx.stroke();
-
-                // 光沢（プラスチックの人形らしく）
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = 'rgba(255,255,255,0.22)';
-                ctx.beginPath(); ctx.ellipse(-4, -58 + bob, 22, 5, -0.05, 0, Math.PI * 2); ctx.fill();
-
-                // 手前側の脚
-                leg(-24, hipY, sw * 0.85, false);
-                leg(22, hipY, -sw * 0.85, false);
+                // まるい胴体
+                ctx.fillStyle = coat;
+                ctx.strokeStyle = line;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.ellipse(-2, -40 + bob, 31, 19, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                // おなかの明るい色
+                ctx.fillStyle = shade(coat, 0.25);
+                ctx.beginPath(); ctx.ellipse(-2, -30 + bob, 20, 7, 0, 0, Math.PI * 2); ctx.fill();
 
                 // ゼッケン（枠の色と馬番）
                 const g = horse.entryNo - 1;
                 ctx.fillStyle = GATE_COLORS[g];
-                ctx.strokeStyle = outline;
-                ctx.lineWidth = 1;
-                ctx.fillRect(-16, -62 + bob, 24, 17);
-                ctx.strokeRect(-16, -62 + bob, 24, 17);
+                ctx.strokeStyle = line;
+                ctx.lineWidth = 1.5;
+                roundRectLocal(-22, -52 + bob, 22, 17, 4);
+                ctx.fill(); ctx.stroke();
                 ctx.save();
                 ctx.scale(facing, 1); // 数字は反転させない
                 ctx.fillStyle = GATE_TEXT[g];
                 ctx.font = 'bold 13px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(horse.entryNo, facing * -4, -53 + bob);
+                ctx.fillText(horse.entryNo, facing * -11, -43 + bob);
                 ctx.restore();
 
-                // 騎手（勝負服は馬の色）
+                // 手前の脚
+                leg(-12, sw * 0.7, false);
+                leg(20, -sw * 0.7, false);
+
+                // 騎手（二頭身。勝負服は馬の色）
                 const silk = horse.color;
-                ctx.strokeStyle = outline;
-                ctx.lineWidth = 1.5;
-                // 脚（ブーツ）
-                ctx.fillStyle = '#f2f2f2';
-                ctx.beginPath(); ctx.ellipse(4, -64 + bob, 9, 5, 0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                ctx.fillStyle = '#222';
-                ctx.beginPath(); ctx.ellipse(10, -58 + bob, 5, 3, 0.3, 0, Math.PI * 2); ctx.fill();
-                // 上半身（前傾）
+                const jy = -62 + bob;
+                ctx.strokeStyle = line;
+                ctx.lineWidth = 2;
+                // 体
                 ctx.fillStyle = silk;
-                ctx.beginPath(); ctx.ellipse(6, -77 + bob, 8, 14, -1.0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-                // 腕と手綱
+                ctx.beginPath(); ctx.ellipse(-7, jy, 10, 11, -0.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                // 腕（手綱を持つ）
+                ctx.strokeStyle = line;
+                ctx.lineWidth = 7;
+                ctx.beginPath(); ctx.moveTo(-1, jy - 2); ctx.lineTo(14, jy + 5); ctx.stroke();
                 ctx.strokeStyle = silk;
-                ctx.lineWidth = 5;
-                ctx.beginPath(); ctx.moveTo(14, -80 + bob); ctx.lineTo(30, -72 + bob); ctx.stroke();
-                ctx.strokeStyle = '#3b2a1a';
-                ctx.lineWidth = 1.2;
-                ctx.beginPath(); ctx.moveTo(30, -72 + bob); ctx.lineTo(52, -76 + bob); ctx.stroke();
-                // 帽子
+                ctx.lineWidth = 4.5;
+                ctx.beginPath(); ctx.moveTo(-1, jy - 2); ctx.lineTo(14, jy + 5); ctx.stroke();
+                // 頭（大きめ）
+                const hx = -4, hy = jy - 18;
+                ctx.fillStyle = '#ffe0c4';
+                ctx.strokeStyle = line;
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(hx, hy, 11, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                // ヘルメット
                 ctx.fillStyle = silk;
-                ctx.strokeStyle = outline;
-                ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.arc(18, -89 + bob, 6.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(hx, hy - 1, 11.5, Math.PI * 1.02, Math.PI * 1.98); ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = 'rgba(255,255,255,0.45)';
+                ctx.beginPath(); ctx.ellipse(hx - 3, hy - 7, 4, 2, -0.3, 0, Math.PI * 2); ctx.fill();
+                // ひさし
+                ctx.fillStyle = shade(silk, -0.3);
+                ctx.beginPath(); ctx.ellipse(hx + 9, hy - 2, 5, 2, 0.2, 0, Math.PI * 2); ctx.fill();
+                // 目とほっぺ
+                ctx.fillStyle = '#2a1a10';
+                ctx.beginPath(); ctx.ellipse(hx + 6, hy + 2, 1.6, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = 'rgba(255,120,120,0.45)';
+                ctx.beginPath(); ctx.ellipse(hx + 5, hy + 6, 2.5, 1.5, 0, 0, Math.PI * 2); ctx.fill();
+
+                // 首と大きな頭
+                ctx.fillStyle = coat;
+                ctx.strokeStyle = line;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.ellipse(22, -52 + bob, 11, 15, 0.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                const ax = 38, ay = -69 + bob;
+                // 耳
+                function ear(x, y, r) {
+                    ctx.fillStyle = coat;
+                    ctx.beginPath(); ctx.moveTo(x - 5, y + 4); ctx.quadraticCurveTo(x + r, y - 16, x + 6, y + 3); ctx.closePath(); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#f4a6a6';
+                    ctx.beginPath(); ctx.moveTo(x - 2, y + 2); ctx.quadraticCurveTo(x + r * 0.7, y - 10, x + 3, y + 2); ctx.closePath(); ctx.fill();
+                }
+                ear(ax - 9, ay - 14, -2);
+                ear(ax - 1, ay - 16, 3);
+                // 頭
+                ctx.fillStyle = coat;
+                ctx.beginPath(); ctx.ellipse(ax, ay, 19, 16, 0.15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                // 鼻づら
+                ctx.fillStyle = shade(coat, 0.3);
+                ctx.beginPath(); ctx.ellipse(ax + 15, ay + 7, 11, 9, 0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = line;
+                ctx.beginPath(); ctx.ellipse(ax + 20, ay + 5, 1.6, 2.2, 0.3, 0, Math.PI * 2); ctx.fill();
+                // にっこり口
+                ctx.strokeStyle = line;
+                ctx.lineWidth = 1.6;
+                ctx.beginPath(); ctx.arc(ax + 15, ay + 9, 4, 0.2, Math.PI - 0.6); ctx.stroke();
+                // 大きなキラキラの目
+                ctx.fillStyle = '#1e140e';
+                ctx.beginPath(); ctx.ellipse(ax + 3, ay - 3, 4.6, 6, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#fff';
-                ctx.fillRect(21, -90 + bob, 6, 2.5);
+                ctx.beginPath(); ctx.arc(ax + 4.5, ay - 5.5, 2, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(ax + 2, ay - 0.5, 1, 0, Math.PI * 2); ctx.fill();
+                // ほっぺ
+                ctx.fillStyle = 'rgba(255,110,130,0.45)';
+                ctx.beginPath(); ctx.ellipse(ax + 4, ay + 7, 4.5, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+                // たてがみと前髪（ふわふわ）
+                ctx.fillStyle = horse.mane;
+                ctx.strokeStyle = line;
+                ctx.lineWidth = 1.8;
+                [[ax - 6, ay - 15, 6], [ax - 13, ay - 9, 6], [ax - 17, ay - 1, 5.5], [ax - 19, ay + 7, 5]].forEach(([x, y, r]) => {
+                    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                });
+                ctx.beginPath(); ctx.ellipse(ax + 1, ay - 14, 7, 4.5, -0.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
                 ctx.restore();
+            }
+
+            function roundRectLocal(x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.arcTo(x + w, y, x + w, y + h, r);
+                ctx.arcTo(x + w, y + h, x, y + h, r);
+                ctx.arcTo(x, y + h, x, y, r);
+                ctx.arcTo(x, y, x + w, y, r);
+                ctx.closePath();
+            }
+
+            // 色を明るく（amount>0）または暗く（amount<0）する
+            function shade(hex, amount) {
+                const n = parseInt(hex.slice(1), 16);
+                let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+                const t = amount < 0 ? 0 : 255, a = Math.abs(amount);
+                r = Math.round(r + (t - r) * a); g = Math.round(g + (t - g) * a); b = Math.round(b + (t - b) * a);
+                return `rgb(${r},${g},${b})`;
             }
 
             // ゴール後も少し流して止まる
