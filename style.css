@@ -21,6 +21,7 @@ body {
     color: var(--text-primary);
     overflow: hidden;
     height: 100vh;
+    height: 100dvh; /* スマホのアドレスバー分のズレ対策 */
     display: flex;
     flex-direction: column;
 }
@@ -78,7 +79,6 @@ main {
     cursor: pointer;
     font-weight: bold;
     transition: all 0.2s;
-    text-transform: uppercase;
     letter-spacing: 1px;
 }
 
@@ -143,7 +143,7 @@ main {
 #race-canvas {
     width: 100%;
     height: 100%;
-    background: url('assets/track.png') center/cover no-repeat;
+    display: block;
     border-radius: 12px;
 }
 
