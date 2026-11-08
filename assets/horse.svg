@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -14 240 214" width="240" height="214">
+  <!--
+    UmaGame の馬と騎手のイラスト（右向き・1枚絵）。
+    ゲーム側で次の class の色を馬ごとに塗り替える:
+      coat = 毛色 / coat-dark = 奥側の脚など毛色の影 / coat-light = 鼻づら・おなか
+      mane = たてがみ・しっぽ / silk = 勝負服・ヘルメット / silk-dark = 勝負服の影
+      gate = ゼッケンの色 / gate-text = 馬番の文字色（文字は {{NUM}} が馬番に置き換わる）
+    足元（台座に乗る位置）は x=118, y=186。
+  -->
+  <style>
+    .line { stroke: #3b2618; stroke-width: 3.2; stroke-linejoin: round; stroke-linecap: round; }
+    .coat { fill: #c98a5a; }
+    .coat-dark { fill: #a46c43; }
+    .coat-light { fill: #f1d3b3; }
+    .mane { fill: #6b3f22; }
+    .silk { fill: #ffd700; }
+    .silk-dark { fill: #c9a600; }
+    .gate { fill: #f5f5f5; }
+    .gate-text { fill: #000000; }
+    .skin { fill: #ffe0c4; }
+    .boot { fill: #ffffff; }
+    .hoof { fill: #4a3426; }
+    .eye { fill: #1e140e; }
+    .shine { fill: #ffffff; }
+    .blush { fill: #ff7a96; opacity: 0.45; }
+    .gloss { fill: #ffffff; opacity: 0.28; }
+  </style>
+
+  <!-- しっぽ -->
+  <path class="mane line" d="M58 92 C40 84 22 88 14 104 C10 114 14 126 22 128 C24 116 32 108 44 108 C36 116 36 128 44 134 C48 120 56 110 64 106 Z"/>
+
+  <!-- 奥側の脚（後ろ脚は後ろへ、前脚は前へ伸ばした走るポーズ） -->
+  <path class="coat-dark line" d="M74 118 C66 132 56 146 44 156 C40 160 44 166 50 164 C64 156 78 142 88 128 Z"/>
+  <path class="hoof line" d="M42 157 C36 160 38 168 46 167 L52 164 Z"/>
+  <path class="coat-dark line" d="M150 112 C162 124 176 134 190 140 C196 142 198 150 192 152 C176 150 158 140 144 126 Z"/>
+  <path class="hoof line" d="M190 140 C198 140 202 148 196 153 L190 152 Z"/>
+
+  <!-- 胴（ころんとした豆の形） -->
+  <path class="coat line" d="M60 98 C58 74 82 60 112 60 C140 60 162 70 166 94 C170 120 146 134 112 134 C80 134 62 122 60 98 Z"/>
+  <path class="coat-light" d="M84 124 C96 132 128 133 146 124 C138 128 122 130 112 130 C100 130 90 128 84 124 Z"/>
+  <path class="gloss" d="M82 76 C94 66 116 64 134 68 C116 68 98 72 86 82 Z"/>
+
+  <!-- 手前の脚 -->
+  <path class="coat line" d="M82 120 C76 138 68 156 56 170 C52 176 58 182 64 178 C78 166 92 148 100 128 Z"/>
+  <path class="hoof line" d="M54 171 C48 176 52 184 60 182 L66 177 Z"/>
+  <path class="coat line" d="M140 122 C154 136 170 150 186 158 C192 161 192 169 185 170 C166 166 146 152 130 134 Z"/>
+  <path class="hoof line" d="M184 158 C192 158 196 166 190 171 L183 170 Z"/>
+
+  <!-- ゼッケン -->
+  <path class="gate line" d="M72 98 L104 98 C108 98 110 100 110 104 L110 122 C110 126 108 128 104 128 L72 128 C68 128 66 126 66 122 L66 104 C66 100 68 98 72 98 Z"/>
+  <text class="gate-text" x="88" y="121" font-family="sans-serif" font-weight="bold" font-size="22" text-anchor="middle">{{NUM}}</text>
+
+  <!-- 首と頭（ひと続きの形） -->
+  <path class="coat line" d="M134 74 C136 52 148 30 172 24 C196 18 218 30 222 52 C226 72 214 86 196 88 C184 89 174 92 166 102 C158 110 146 104 142 96 C138 90 134 84 134 74 Z"/>
+  <!-- 鼻づら -->
+  <path class="coat-light line" d="M196 58 C210 54 226 60 228 72 C230 84 218 92 204 90 C192 88 186 80 188 70 C189 64 192 60 196 58 Z"/>
+  <path class="eye" d="M214 68 C216 66 219 67 219 70 C219 72 216 73 214 71 Z"/>
+  <path d="M200 80 C204 85 211 85 214 80" fill="none" stroke="#3b2618" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- 耳 -->
+  <path class="coat line" d="M160 34 C154 18 158 4 166 0 C172 8 174 22 170 34 Z"/>
+  <path class="coat line" d="M176 28 C174 14 180 2 188 0 C192 10 190 24 184 32 Z"/>
+  <path fill="#f4a6a6" d="M162 30 C159 20 161 10 166 6 C169 12 170 22 168 30 Z"/>
+  <path fill="#f4a6a6" d="M179 26 C178 16 182 8 187 5 C189 12 187 22 183 28 Z"/>
+  <!-- 大きなキラキラの目 -->
+  <path class="eye" d="M186 44 C194 42 200 50 199 60 C198 70 190 74 184 70 C178 66 177 56 179 50 C181 46 183 45 186 44 Z"/>
+  <circle class="shine" cx="192" cy="51" r="4.2"/>
+  <circle class="shine" cx="185" cy="63" r="2"/>
+  <ellipse class="blush" cx="192" cy="80" rx="8" ry="4.5"/>
+  <!-- たてがみと前髪 -->
+  <path class="mane line" d="M150 40 C140 46 134 58 134 70 C130 80 132 92 140 98 C140 88 144 82 148 78 C146 70 148 62 152 56 C152 50 154 44 158 40 Z"/>
+  <path class="mane line" d="M156 34 C164 24 180 22 188 30 C182 32 178 38 178 44 C172 38 164 38 158 44 C156 40 155 37 156 34 Z"/>
+
+  <!-- 手綱 -->
+  <path d="M142 86 C162 88 182 86 198 80" fill="none" stroke="#5a3b22" stroke-width="2"/>
+
+  <!-- 騎手（二頭身） -->
+  <g transform="translate(-16 6)">
+  <!-- 体（前かがみ） -->
+  <path class="silk line" d="M98 84 C92 66 100 50 116 46 C130 43 140 52 140 64 C140 74 134 82 124 86 C114 89 104 89 98 84 Z"/>
+  <path class="silk-dark" d="M102 82 C112 86 124 85 132 80 C126 86 114 88 102 82 Z"/>
+  <!-- ブーツ -->
+  <path class="boot line" d="M108 84 C108 94 116 100 126 98 C132 97 134 92 130 88 C124 90 116 89 108 84 Z"/>
+  <!-- 腕と手綱 -->
+  <path class="silk line" d="M130 58 C142 60 152 66 158 74 C160 78 156 82 152 79 C146 74 136 70 128 68 Z"/>
+  <!-- 頭 -->
+  <path class="skin line" d="M118 40 C116 28 124 18 136 18 C148 18 154 28 152 40 C150 50 142 54 134 54 C126 54 119 49 118 40 Z"/>
+  <!-- ヘルメット -->
+  <path class="silk line" d="M116 34 C116 20 126 10 138 10 C150 10 158 20 156 32 C150 30 142 29 134 29 C126 29 120 31 116 34 Z"/>
+  <path class="silk-dark line" d="M150 30 C156 29 162 30 166 33 C162 36 156 36 150 34 Z"/>
+  <path class="gloss" d="M124 20 C128 15 136 13 142 14 C136 16 130 18 126 23 Z"/>
+  <!-- 顔 -->
+  <ellipse class="eye" cx="144" cy="40" rx="2.4" ry="3.2"/>
+  <ellipse class="blush" cx="143" cy="47" rx="4" ry="2.4"/>
+  </g>
+</svg>

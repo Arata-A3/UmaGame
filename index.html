@@ -199,62 +199,63 @@
 
     <script>
         // --- Horse Database ---
+        // color = 勝負服の色、coat = 毛色、mane = たてがみ・しっぽの色（馬ごとに固定）
         const HORSES = [
-            { id: 1, name: "レジェンド", speed: 75, stamina: 114, guts: 120, type: "追", apt: "G", color: "#FFD700" },
-            { id: 2, name: "スターライト", speed: 75, stamina: 114, guts: 117, type: "追", apt: "G", color: "#FFFFE0" },
-            { id: 3, name: "ベニザクラ", speed: 96, stamina: 102, guts: 108, type: "先", apt: "G", color: "#8B0000" },
-            { id: 4, name: "シルバーブレット", speed: 84, stamina: 102, guts: 114, type: "先", apt: "D", color: "#C0C0C0" },
-            { id: 5, name: "ブラックホール", speed: 99, stamina: 90, guts: 105, type: "先", apt: "D", color: "#000000" },
-            { id: 6, name: "ロイヤルナイト", speed: 72, stamina: 102, guts: 114, type: "先", apt: "G", color: "#800080" },
-            { id: 7, name: "ダイヤモンドスター", speed: 96, stamina: 84, guts: 105, type: "差", apt: "G", color: "#E0FFFF" },
-            { id: 8, name: "カフェモカ", speed: 81, stamina: 96, guts: 108, type: "差", apt: "D", color: "#A0522D" },
-            { id: 9, name: "ハヤテ", speed: 99, stamina: 96, guts: 90, type: "差", apt: "D", color: "#708090" },
-            { id: 10, name: "エメラルドシティー", speed: 84, stamina: 96, guts: 105, type: "差", apt: "G", color: "#00FA9A" },
-            { id: 11, name: "キングスガード", speed: 78, stamina: 108, guts: 99, type: "先", apt: "D", color: "#4682B4" },
-            { id: 12, name: "ナイトメア", speed: 93, stamina: 84, guts: 108, type: "追", apt: "G", color: "#2F4F4F" },
-            { id: 13, name: "ゼログラビティ", speed: 93, stamina: 87, guts: 102, type: "差", apt: "G", color: "#4B0082" },
-            { id: 14, name: "オヤスミマン", speed: 60, stamina: 105, guts: 117, type: "追", apt: "D", color: "#483D8B" },
-            { id: 15, name: "ミカヅキ", speed: 69, stamina: 120, guts: 90, type: "先", apt: "G", color: "#FFFACD" },
-            { id: 16, name: "オメガドライブ", speed: 114, stamina: 75, guts: 84, type: "逃", apt: "G", color: "#333333" },
-            { id: 17, name: "アイランドブリーズ", speed: 90, stamina: 96, guts: 84, type: "逃", apt: "G", color: "#AFEEEE" },
-            { id: 18, name: "ネオンナイト", speed: 102, stamina: 78, guts: 90, type: "先", apt: "D", color: "#FF00FF" },
-            { id: 19, name: "ギャラクシー", speed: 102, stamina: 72, guts: 90, type: "追", apt: "G", color: "#8A2BE2" },
-            { id: 20, name: "サファイアリング", speed: 84, stamina: 90, guts: 90, type: "差", apt: "D", color: "#4169E1" },
-            { id: 21, name: "キャンディドロップ", speed: 87, stamina: 93, guts: 81, type: "追", apt: "G", color: "#FFB6C1" },
-            { id: 22, name: "コスモバースト", speed: 111, stamina: 66, guts: 84, type: "逃", apt: "D", color: "#FF8C00" },
-            { id: 23, name: "サンセットグロウ", speed: 84, stamina: 114, guts: 60, type: "追", apt: "D", color: "#FF4500" },
-            { id: 24, name: "ルビーハート", speed: 72, stamina: 111, guts: 75, type: "差", apt: "G", color: "#DC143C" },
-            { id: 25, name: "デザートストーム", speed: 96, stamina: 72, guts: 87, type: "差", apt: "D", color: "#EDE275" },
-            { id: 26, name: "ムーンシャドウ", speed: 81, stamina: 75, guts: 96, type: "差", apt: "D", color: "#191970" },
-            { id: 27, name: "クリスタルレイン", speed: 90, stamina: 90, guts: 72, type: "先", apt: "G", color: "#B0E0E6" },
-            { id: 28, name: "アイスエイジ", speed: 87, stamina: 99, guts: 66, type: "逃", apt: "D", color: "#F0FFFF" },
-            { id: 29, name: "ジャングルビート", speed: 90, stamina: 84, guts: 78, type: "先", apt: "D", color: "#008000" },
-            { id: 30, name: "ルナフェイズ", speed: 90, stamina: 75, guts: 84, type: "先", apt: "G", color: "#9FA8DA" },
-            { id: 31, name: "ゴールデンアロー", speed: 78, stamina: 105, guts: 66, type: "逃", apt: "D", color: "#DAA520" },
-            { id: 32, name: "オーシャンブルー", speed: 93, stamina: 84, guts: 72, type: "差", apt: "G", color: "#000080" },
-            { id: 33, name: "ワイルドカード", speed: 96, stamina: 75, guts: 75, type: "先", apt: "D", color: "#006400" },
-            { id: 34, name: "カミナリ", speed: 105, stamina: 75, guts: 60, type: "逃", apt: "D", color: "#FFFF00" },
-            { id: 35, name: "ユキカゼ", speed: 90, stamina: 66, guts: 84, type: "追", apt: "G", color: "#FFFFFF" },
-            { id: 36, name: "クイーンズレース", speed: 99, stamina: 60, guts: 81, type: "差", apt: "G", color: "#FF69B4" },
-            { id: 37, name: "コズミック", speed: 102, stamina: 60, guts: 75, type: "追", apt: "D", color: "#6A5ACD" },
-            { id: 38, name: "スカイハイ", speed: 108, stamina: 60, guts: 66, type: "先", apt: "G", color: "#87CEEB" },
-            { id: 39, name: "フレイムダッシュ", speed: 108, stamina: 36, guts: 84, type: "逃", apt: "G", color: "#FF0000" },
-            { id: 40, name: "フォレストキング", speed: 75, stamina: 60, guts: 90, type: "先", apt: "D", color: "#228B22" },
-            { id: 41, name: "サンダーボルト", speed: 105, stamina: 45, guts: 75, type: "逃", apt: "D", color: "#9ACD32" },
-            { id: 42, name: "ミストランナー", speed: 111, stamina: 54, guts: 60, type: "先", apt: "G", color: "#F5F5F5" },
-            { id: 43, name: "ヤマビコ", speed: 84, stamina: 75, guts: 66, type: "逃", apt: "D", color: "#556B2F" },
-            { id: 44, name: "サクラフブキ", speed: 102, stamina: 54, guts: 66, type: "追", apt: "D", color: "#FFC0CB" },
-            { id: 45, name: "ミラージュ", speed: 105, stamina: 54, guts: 60, type: "逃", apt: "G", color: "#F0E68C" },
-            { id: 46, name: "ショコラデライト", speed: 75, stamina: 66, guts: 75, type: "差", apt: "D", color: "#8B4513" },
-            { id: 47, name: "ファンタジスタ", speed: 108, stamina: 36, guts: 66, type: "逃", apt: "G", color: "#EE82EE" },
-            { id: 48, name: "ノラネコパンチ", speed: 105, stamina: 30, guts: 60, type: "逃", apt: "D", color: "#FFA500" },
-            { id: 49, name: "ソニックブーム", speed: 114, stamina: 30, guts: 45, type: "逃", apt: "G", color: "#0000FF" },
-            { id: 50, name: "マシュマロダンス", speed: 66, stamina: 45, guts: 66, type: "追", apt: "D", color: "#FFF5EE" }
+            { id: 1, name: "レジェンド", speed: 75, stamina: 114, guts: 120, type: "追", apt: "G", color: "#FFD700", coat: "#e6c48f", mane: "#fff4dc" },
+            { id: 2, name: "スターライト", speed: 75, stamina: 114, guts: 117, type: "追", apt: "G", color: "#FFFFE0", coat: "#f4efe6", mane: "#cfc6b8" },
+            { id: 3, name: "ベニザクラ", speed: 96, stamina: 102, guts: 108, type: "先", apt: "G", color: "#8B0000", coat: "#c98a5a", mane: "#6b3f22" },
+            { id: 4, name: "シルバーブレット", speed: 84, stamina: 102, guts: 114, type: "先", apt: "D", color: "#C0C0C0", coat: "#c4c4cc", mane: "#7a7a86" },
+            { id: 5, name: "ブラックホール", speed: 99, stamina: 90, guts: 105, type: "先", apt: "D", color: "#000000", coat: "#3a3436", mane: "#1a1718" },
+            { id: 6, name: "ロイヤルナイト", speed: 72, stamina: 102, guts: 114, type: "先", apt: "G", color: "#800080", coat: "#5b4636", mane: "#241812" },
+            { id: 7, name: "ダイヤモンドスター", speed: 96, stamina: 84, guts: 105, type: "差", apt: "G", color: "#E0FFFF", coat: "#c4c4cc", mane: "#7a7a86" },
+            { id: 8, name: "カフェモカ", speed: 81, stamina: 96, guts: 108, type: "差", apt: "D", color: "#A0522D", coat: "#8b5a3c", mane: "#2e1d14" },
+            { id: 9, name: "ハヤテ", speed: 99, stamina: 96, guts: 90, type: "差", apt: "D", color: "#708090", coat: "#c98a5a", mane: "#6b3f22" },
+            { id: 10, name: "エメラルドシティー", speed: 84, stamina: 96, guts: 105, type: "差", apt: "G", color: "#00FA9A", coat: "#8b5a3c", mane: "#2e1d14" },
+            { id: 11, name: "キングスガード", speed: 78, stamina: 108, guts: 99, type: "先", apt: "D", color: "#4682B4", coat: "#5b4636", mane: "#241812" },
+            { id: 12, name: "ナイトメア", speed: 93, stamina: 84, guts: 108, type: "追", apt: "G", color: "#2F4F4F", coat: "#3a3436", mane: "#1a1718" },
+            { id: 13, name: "ゼログラビティ", speed: 93, stamina: 87, guts: 102, type: "差", apt: "G", color: "#4B0082", coat: "#b59a86", mane: "#5a4334" },
+            { id: 14, name: "オヤスミマン", speed: 60, stamina: 105, guts: 117, type: "追", apt: "D", color: "#483D8B", coat: "#8b5a3c", mane: "#2e1d14" },
+            { id: 15, name: "ミカヅキ", speed: 69, stamina: 120, guts: 90, type: "先", apt: "G", color: "#FFFACD", coat: "#e6c48f", mane: "#fff4dc" },
+            { id: 16, name: "オメガドライブ", speed: 114, stamina: 75, guts: 84, type: "逃", apt: "G", color: "#333333", coat: "#5b4636", mane: "#241812" },
+            { id: 17, name: "アイランドブリーズ", speed: 90, stamina: 96, guts: 84, type: "逃", apt: "G", color: "#AFEEEE", coat: "#a8653a", mane: "#e8c9a0" },
+            { id: 18, name: "ネオンナイト", speed: 102, stamina: 78, guts: 90, type: "先", apt: "D", color: "#FF00FF", coat: "#3a3436", mane: "#1a1718" },
+            { id: 19, name: "ギャラクシー", speed: 102, stamina: 72, guts: 90, type: "追", apt: "G", color: "#8A2BE2", coat: "#b59a86", mane: "#5a4334" },
+            { id: 20, name: "サファイアリング", speed: 84, stamina: 90, guts: 90, type: "差", apt: "D", color: "#4169E1", coat: "#8b5a3c", mane: "#2e1d14" },
+            { id: 21, name: "キャンディドロップ", speed: 87, stamina: 93, guts: 81, type: "追", apt: "G", color: "#FFB6C1", coat: "#a8653a", mane: "#e8c9a0" },
+            { id: 22, name: "コスモバースト", speed: 111, stamina: 66, guts: 84, type: "逃", apt: "D", color: "#FF8C00", coat: "#c98a5a", mane: "#6b3f22" },
+            { id: 23, name: "サンセットグロウ", speed: 84, stamina: 114, guts: 60, type: "追", apt: "D", color: "#FF4500", coat: "#a8653a", mane: "#e8c9a0" },
+            { id: 24, name: "ルビーハート", speed: 72, stamina: 111, guts: 75, type: "差", apt: "G", color: "#DC143C", coat: "#c98a5a", mane: "#6b3f22" },
+            { id: 25, name: "デザートストーム", speed: 96, stamina: 72, guts: 87, type: "差", apt: "D", color: "#EDE275", coat: "#e6c48f", mane: "#fff4dc" },
+            { id: 26, name: "ムーンシャドウ", speed: 81, stamina: 75, guts: 96, type: "差", apt: "D", color: "#191970", coat: "#5b4636", mane: "#241812" },
+            { id: 27, name: "クリスタルレイン", speed: 90, stamina: 90, guts: 72, type: "先", apt: "G", color: "#B0E0E6", coat: "#c4c4cc", mane: "#7a7a86" },
+            { id: 28, name: "アイスエイジ", speed: 87, stamina: 99, guts: 66, type: "逃", apt: "D", color: "#F0FFFF", coat: "#f4efe6", mane: "#cfc6b8" },
+            { id: 29, name: "ジャングルビート", speed: 90, stamina: 84, guts: 78, type: "先", apt: "D", color: "#008000", coat: "#8b5a3c", mane: "#2e1d14" },
+            { id: 30, name: "ルナフェイズ", speed: 90, stamina: 75, guts: 84, type: "先", apt: "G", color: "#9FA8DA", coat: "#c4c4cc", mane: "#7a7a86" },
+            { id: 31, name: "ゴールデンアロー", speed: 78, stamina: 105, guts: 66, type: "逃", apt: "D", color: "#DAA520", coat: "#e6c48f", mane: "#fff4dc" },
+            { id: 32, name: "オーシャンブルー", speed: 93, stamina: 84, guts: 72, type: "差", apt: "G", color: "#000080", coat: "#8b5a3c", mane: "#2e1d14" },
+            { id: 33, name: "ワイルドカード", speed: 96, stamina: 75, guts: 75, type: "先", apt: "D", color: "#006400", coat: "#5b4636", mane: "#241812" },
+            { id: 34, name: "カミナリ", speed: 105, stamina: 75, guts: 60, type: "逃", apt: "D", color: "#FFFF00", coat: "#c98a5a", mane: "#6b3f22" },
+            { id: 35, name: "ユキカゼ", speed: 90, stamina: 66, guts: 84, type: "追", apt: "G", color: "#FFFFFF", coat: "#f4efe6", mane: "#cfc6b8" },
+            { id: 36, name: "クイーンズレース", speed: 99, stamina: 60, guts: 81, type: "差", apt: "G", color: "#FF69B4", coat: "#a8653a", mane: "#e8c9a0" },
+            { id: 37, name: "コズミック", speed: 102, stamina: 60, guts: 75, type: "追", apt: "D", color: "#6A5ACD", coat: "#3a3436", mane: "#1a1718" },
+            { id: 38, name: "スカイハイ", speed: 108, stamina: 60, guts: 66, type: "先", apt: "G", color: "#87CEEB", coat: "#c4c4cc", mane: "#7a7a86" },
+            { id: 39, name: "フレイムダッシュ", speed: 108, stamina: 36, guts: 84, type: "逃", apt: "G", color: "#FF0000", coat: "#c98a5a", mane: "#6b3f22" },
+            { id: 40, name: "フォレストキング", speed: 75, stamina: 60, guts: 90, type: "先", apt: "D", color: "#228B22", coat: "#8b5a3c", mane: "#2e1d14" },
+            { id: 41, name: "サンダーボルト", speed: 105, stamina: 45, guts: 75, type: "逃", apt: "D", color: "#9ACD32", coat: "#a8653a", mane: "#e8c9a0" },
+            { id: 42, name: "ミストランナー", speed: 111, stamina: 54, guts: 60, type: "先", apt: "G", color: "#F5F5F5", coat: "#c4c4cc", mane: "#7a7a86" },
+            { id: 43, name: "ヤマビコ", speed: 84, stamina: 75, guts: 66, type: "逃", apt: "D", color: "#556B2F", coat: "#b59a86", mane: "#5a4334" },
+            { id: 44, name: "サクラフブキ", speed: 102, stamina: 54, guts: 66, type: "追", apt: "D", color: "#FFC0CB", coat: "#c98a5a", mane: "#6b3f22" },
+            { id: 45, name: "ミラージュ", speed: 105, stamina: 54, guts: 60, type: "逃", apt: "G", color: "#F0E68C", coat: "#e6c48f", mane: "#fff4dc" },
+            { id: 46, name: "ショコラデライト", speed: 75, stamina: 66, guts: 75, type: "差", apt: "D", color: "#8B4513", coat: "#5b4636", mane: "#241812" },
+            { id: 47, name: "ファンタジスタ", speed: 108, stamina: 36, guts: 66, type: "逃", apt: "G", color: "#EE82EE", coat: "#a8653a", mane: "#e8c9a0" },
+            { id: 48, name: "ノラネコパンチ", speed: 105, stamina: 30, guts: 60, type: "逃", apt: "D", color: "#FFA500", coat: "#8b5a3c", mane: "#2e1d14" },
+            { id: 49, name: "ソニックブーム", speed: 114, stamina: 30, guts: 45, type: "逃", apt: "G", color: "#0000FF", coat: "#3a3436", mane: "#1a1718" },
+            { id: 50, name: "マシュマロダンス", speed: 66, stamina: 45, guts: 66, type: "追", apt: "D", color: "#FFF5EE", coat: "#f4efe6", mane: "#cfc6b8" }
         ];
 
         // --- Version ---
         // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
-        const APP_VERSION = '1.6.0';
+        const APP_VERSION = '1.7.0';
 
         // --- Application State ---
         let state = {
@@ -306,6 +307,7 @@
         // --- Initialization ---
         function init() {
             console.log("UmaGame - Game Init", APP_VERSION);
+            loadHorseSvg();
             document.getElementById('version-display').textContent = `UmaGame v${APP_VERSION}`;
             loadGame();
             updateUI();
@@ -1196,6 +1198,44 @@
             runRaceSimulation();
         }
 
+        // --- 馬のイラスト（assets/horse.svg を馬ごとの色に塗って使う） ---
+        // SVG の class（coat, mane, silk, gate など）に色を当てる。{{NUM}} は馬番に置き換わる
+        let horseSvgText = null;
+        let horseImageCache = {};
+        function loadHorseSvg() {
+            if (horseSvgText !== null) return Promise.resolve();
+            return fetch('assets/horse.svg')
+                .then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
+                .then(t => { horseSvgText = t; })
+                .catch(() => { horseSvgText = ''; }); // 読めないときはコードで描いた馬を使う
+        }
+
+        function shadeColor(hex, amount) {
+            const n = parseInt(String(hex).slice(1), 16);
+            let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+            const t = amount < 0 ? 0 : 255, a = Math.abs(amount);
+            r = Math.round(r + (t - r) * a); g = Math.round(g + (t - g) * a); b = Math.round(b + (t - b) * a);
+            return `rgb(${r},${g},${b})`;
+        }
+
+        // 塗り終わった画像を返す（まだ準備中なら null）
+        function horseImage(h, gateColor, gateTextColor) {
+            if (!horseSvgText) return null;
+            const key = `${h.id}-${h.entryNo}`;
+            let img = horseImageCache[key];
+            if (!img) {
+                if (Object.keys(horseImageCache).length > 120) horseImageCache = {};
+                const css = `.coat{fill:${h.coat}}.coat-dark{fill:${shadeColor(h.coat, -0.18)}}.coat-light{fill:${shadeColor(h.coat, 0.45)}}`
+                    + `.mane{fill:${h.mane}}.silk{fill:${h.color}}.silk-dark{fill:${shadeColor(h.color, -0.25)}}`
+                    + `.gate{fill:${gateColor}}.gate-text{fill:${gateTextColor}}`;
+                const svg = horseSvgText.replace('</style>', `</style><style>${css}</style>`).split('{{NUM}}').join(String(h.entryNo));
+                img = new Image();
+                img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+                horseImageCache[key] = img;
+            }
+            return img.complete && img.naturalWidth > 0 ? img : null;
+        }
+
         // 着差（馬身）を競馬の表記にする
         const HORSE_LENGTH_M = 2.4;
         // ゲーム内のレースは実際より能力差が大きく出るため、着差の表示だけ実際の競馬らしい幅に縮める
@@ -1357,7 +1397,9 @@
 
             entries.forEach(h => {
                 h.overrun = 0;
-                [h.coat, h.mane] = COATS[h.id % COATS.length];
+                const base = HORSES.find(x => x.id === h.id) || {};
+                h.coat = h.coat || base.coat || COATS[h.id % COATS.length][0];
+                h.mane = h.mane || base.mane || COATS[h.id % COATS.length][1];
             });
 
             // 馬券を買った馬
@@ -1481,7 +1523,7 @@
                 const top3 = order.slice(0, 3).map(displayP);
                 const avg = top3.reduce((a, b) => a + b, 0) / top3.length;
                 const focus = Math.max(avg, top3[0] - VISIBLE_SPAN * 0.2);
-                const left = focus - VISIBLE_SPAN * 0.7;
+                const left = focus - VISIBLE_SPAN * 0.6; // 先頭は画面の右から2割より内側に収まる
                 if (cam.left === null) cam.left = left;
                 cam.ppu = ppu;
                 cam.left += (left - cam.left) * (1 - Math.exp(-frameDt * 5)); // フレームレートに依存しないなめらかな追従
@@ -1584,7 +1626,7 @@
                     ctx.rect(trackX, HUD_H, trackW, h - HUD_H);
                     ctx.clip();
                     const phase = (tick + renderAlpha) * 0.22 + hh.entryNo * 1.3; // 脚の動き（時間に合わせて一定のリズム）
-                    drawFigure(x - figSize * 0.6, groundY, figSize, 1, hh, phase, posOf[hh.entryNo]); // 鼻先が現在位置
+                    drawHorse(x, groundY, figSize, hh, phase); // x は鼻先の位置
                     ctx.restore();
                 });
 
@@ -1659,6 +1701,34 @@
                 });
 
                 drawHud(w, order);
+            }
+
+            // イラスト（assets/horse.svg）の馬を、メダルゲームの人形のように支柱の上で揺らして描く
+            // 読み込めないとき（オフラインなど）はコードで描いた馬で代用する
+            const SVG_W = 240, SVG_H = 214;          // horse.svg の大きさ
+            const SVG_FOOT_X = 118, SVG_FOOT_Y = 200; // 足元の位置（画像内）
+            const SVG_NOSE_X = 230;                   // 鼻先の位置（画像内）
+            function drawHorse(noseX, groundY, size, hh, phase) {
+                const g = hh.entryNo - 1;
+                const img = horseImage(hh, GATE_COLORS[g], GATE_TEXT[g]);
+                if (!img) { drawFigure(noseX - size * 0.6, groundY, size, 1, hh, phase); return; }
+                const H = size * 1.05, W = H * SVG_W / SVG_H;
+                const footX = noseX - (SVG_NOSE_X - SVG_FOOT_X) / SVG_W * W;
+                const lift = Math.abs(Math.sin(phase)) * size * 0.06;
+                const rock = Math.sin(phase) * 0.07;
+                // 影と台座と支柱
+                ctx.fillStyle = 'rgba(0,0,0,0.28)';
+                ctx.beginPath(); ctx.ellipse(footX, groundY, W * 0.3, size * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#9aa0a6';
+                ctx.fillRect(footX - 2, groundY - size * 0.5, 4, size * 0.5);
+                ctx.fillStyle = '#5f6368';
+                ctx.beginPath(); ctx.ellipse(footX, groundY, W * 0.14, size * 0.035, 0, 0, Math.PI * 2); ctx.fill();
+                // 体ごと前後に揺れながら走る
+                ctx.save();
+                ctx.translate(footX, groundY - size * 0.1 - lift);
+                ctx.rotate(rock);
+                ctx.drawImage(img, -SVG_FOOT_X / SVG_W * W, -SVG_FOOT_Y / SVG_H * H, W, H);
+                ctx.restore();
             }
 
             // 馬と騎手の人形（デフォルメした「ちび馬」。右向きで描き、左向きは反転）
