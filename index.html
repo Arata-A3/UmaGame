@@ -287,7 +287,7 @@
 
         // --- Version ---
         // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
-        const APP_VERSION = '1.10.2';
+        const APP_VERSION = '1.10.3';
 
         // --- Application State ---
         let state = {
@@ -349,8 +349,9 @@
             renderIcons();
             // 戻るボタン用の見張りを積む。ブラウザはタップなどの操作なしで積んだ履歴を飛ばすことがあるので、
             // 画面に触れたときにも（まだ無ければ）積み直す
-            ensureHistoryGuard();
-            document.addEventListener('pointerdown', () => ensureHistoryGuard(), true);
+            // タップ（click）やキー操作のたびに、足りなければ積み足す
+            document.addEventListener('click', () => ensureHistoryGuard(), true);
+            document.addEventListener('keydown', () => ensureHistoryGuard(), true);
             // 絵の読み込みが終わったら、馬の絵が入る画面を描き直す
             loadHorseImage().then(() => {
                 if (state.currentRace && state.currentRace.entries) renderPaddock();
@@ -496,32 +497,41 @@
 
         // スマホの戻るボタン・ブラウザの「戻る」: アプリを閉じずに、ひとつ前の画面へ戻る
         // 戻るで消える履歴（見張り）を、今の画面からメニューまで戻る回数 + 1（メニューで「やめますか？」用）だけ積んでおく。
-        // ブラウザは「タップなどの操作なしで積んだ履歴」を戻るボタンで飛ばしてしまうので、
-        // 積むのは画面をタップしたとき・画面を切り替えたときだけにし、戻るボタンの処理の中では積まない。
+        // 注意: ブラウザは「ユーザーの操作中ではないときに積んだ履歴」を戻るボタンで飛ばしてしまう。
+        // スマホのタッチでは pointerdown はまだ「操作」と扱われず、click で初めて扱われる。
+        // そのため、積むのは「操作中（navigator.userActivation.isActive）」のときだけにする。
+        // また、各履歴に番号（idx）を入れておき、もし飛ばされても今いる番号から正しく数え直す。
         const BACK_STEPS = {
             'main-menu-screen': 0, 'settings-screen': 1, 'bank-screen': 1, 'stats-screen': 1, 'stable-screen': 1,
             'paddock-screen': 1, 'betting-screen': 2, 'result-screen': 2,
             'race-screen': 4 // レース中に押された分の予備
         };
-        let guardCount = 0; // 積んである見張りの数
+        let guardCount = 0; // 積んである見張りの数（今いる履歴の番号）
+        function userActive() {
+            const ua = navigator.userActivation;
+            return !ua || ua.isActive; // 判定できないブラウザでは積む
+        }
         function ensureHistoryGuard(extra = 0) {
+            if (!userActive()) return; // 操作中でなければ積まない（飛ばされる履歴を作らない）
             const need = (BACK_STEPS[currentScreen] || 0) + 1 + (typeof extra === 'number' ? extra : 0);
             try {
-                while (guardCount < need) { history.pushState({ uma: 'guard' }, ''); guardCount++; }
+                while (guardCount < need) { guardCount++; history.pushState({ uma: 'guard', idx: guardCount }, ''); }
             } catch (e) { /* 使えない環境では何もしない */ }
         }
         let exiting = false; // 終了のために自分で履歴を戻している間
-        window.addEventListener('popstate', () => {
-            guardCount = Math.max(0, guardCount - 1);
+        window.addEventListener('popstate', (e) => {
+            const now = (e.state && e.state.uma === 'guard') ? e.state.idx : 0;
+            const steps = Math.max(1, guardCount - now); // 何段戻ったか（飛ばされたら2段以上）
+            guardCount = now;
             if (exiting) return;
             if (document.getElementById('modal-overlay').classList.contains('open')) {
                 if (modalOpts.isExit) { closeModal(); exitGame(); return; } // 「やめますか？」中にもう一度戻る → 終了
                 closeModal();  // ダイアログが開いていたら閉じるだけ
-            } else if (raceInProgress) {
-                // レース中は戻らない
-            } else if (currentScreen === 'main-menu-screen') {
-                askExit();     // メニューでは、やめるかどうか聞く（ここでもう一度戻るを押すと終了）
-            } else {
+                return;
+            }
+            if (raceInProgress) return; // レース中は戻らない
+            for (let i = 0; i < steps; i++) {
+                if (currentScreen === 'main-menu-screen') { askExit(); break; } // メニューでは、やめるかどうか聞く
                 goBack();
             }
         });
