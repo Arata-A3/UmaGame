@@ -1220,3 +1220,30 @@ main { overflow-x: hidden; }
 .dirt.carrot { display: flex; align-items: center; justify-content: center; }
 .dirt.carrot .carrot-ico { width: 40px; height: 40px; vertical-align: 0; }
 .carrot-ico { stroke: none; }
+
+/* ---------- v1.10.1 ---------- */
+/* 人気の札は幅をそろえ、馬名の長さで位置がずれないようにする */
+.pop { min-width: 3.6em; text-align: center; }
+
+.bet-combo .tap-detail {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    width: 100%;
+    gap: 6px;
+}
+
+/* 単勝・複勝の行は、人気をオッズの下に出す（馬名の長さに左右されない） */
+.bet-pop { margin-top: 2px; }
+
+.bet-combo .bet-name { max-width: none; }
+.entry-pop { display: flex; justify-content: flex-end; }
+
+/* 2つボタンのダイアログ */
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 1.5rem;
+}
+
+.modal-actions .btn { flex: 1; }
+.modal-cancel { background: rgba(255, 255, 255, 0.12); color: #fff; }

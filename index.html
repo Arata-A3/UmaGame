@@ -222,7 +222,10 @@
         <div class="modal glass-card">
             <h2 id="modal-title"></h2>
             <div id="modal-body"></div>
-            <button id="modal-close-btn" class="btn btn-primary" style="margin-top:1.5rem; width:100%;">OK</button>
+            <div class="modal-actions">
+                <button id="modal-cancel-btn" class="btn modal-cancel" style="display:none;">キャンセル</button>
+                <button id="modal-close-btn" class="btn btn-primary">OK</button>
+            </div>
         </div>
     </div>
 
@@ -284,7 +287,7 @@
 
         // --- Version ---
         // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
-        const APP_VERSION = '1.10.0';
+        const APP_VERSION = '1.10.1';
 
         // --- Application State ---
         let state = {
@@ -344,6 +347,10 @@
         function init() {
             console.log("UmaGame - Game Init", APP_VERSION);
             renderIcons();
+            // 戻るボタン用の見張りを積む。ブラウザはタップなどの操作なしで積んだ履歴を飛ばすことがあるので、
+            // 画面に触れたときにも（まだ無ければ）積み直す
+            ensureHistoryGuard();
+            document.addEventListener('pointerdown', ensureHistoryGuard, true);
             // 絵の読み込みが終わったら、馬の絵が入る画面を描き直す
             loadHorseImage().then(() => {
                 if (state.currentRace && state.currentRace.entries) renderPaddock();
@@ -363,7 +370,16 @@
             document.getElementById('menu-bank-btn').addEventListener('click', () => switchScreen('bank-screen'));
             document.querySelectorAll('.bank-borrow-btn').forEach(b => b.addEventListener('click', () => borrow(b.dataset.amount)));
             document.querySelectorAll('.bank-repay-btn').forEach(b => b.addEventListener('click', () => repay(b.dataset.amount)));
-            document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+            document.getElementById('modal-close-btn').addEventListener('click', () => {
+                const f = modalOpts.onOk;
+                closeModal();
+                if (f) f();
+            });
+            document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+                const f = modalOpts.onCancel;
+                closeModal();
+                if (f) f();
+            });
 
             document.getElementById('speed-05-btn').addEventListener('click', () => setRaceSpeed(0.5));
             document.getElementById('speed-10-btn').addEventListener('click', () => setRaceSpeed(1.0));
@@ -465,7 +481,7 @@
                 document.getElementById('game-container').scrollTop = 0;
             }
             currentScreen = screenId;
-            if (screenId !== 'main-menu-screen') ensureHistoryGuard();
+            ensureHistoryGuard(); // メニューでも積む（戻るボタンで「やめますか？」を出すため）
             document.getElementById('header-back-btn').classList.toggle('show', !!SCREEN_PARENT[screenId]);
             if (screenId === 'bank-screen') renderBank();
             if (screenId === 'stable-screen') renderStableInfo();
@@ -488,12 +504,40 @@
         window.addEventListener('popstate', () => {
             historyGuard = false;
             if (document.getElementById('modal-overlay').classList.contains('open')) {
+                const f = modalOpts.onCancel;
                 closeModal(); // ダイアログが開いていたら閉じるだけ
-            } else if (!raceInProgress) {
-                goBack();     // レース中は戻らない
+                if (f) f();
+            } else if (raceInProgress) {
+                // レース中は戻らない
+            } else if (currentScreen === 'main-menu-screen') {
+                askExit();    // メニューでは、やめるかどうか聞く
+                return;       // 見張りは積み直さない（もう一度戻るを押せば終了）
+            } else {
+                goBack();
             }
-            if (currentScreen !== 'main-menu-screen' || raceInProgress) ensureHistoryGuard();
+            ensureHistoryGuard();
         });
+
+        function askExit() {
+            showModal('ゲームをやめますか？', '<p style="margin-top:0.75rem;">進み具合は自動で保存されています。</p>', {
+                okLabel: 'やめる', cancelLabel: '続ける', guard: false,
+                onOk: exitGame,
+                onCancel: ensureHistoryGuard
+            });
+        }
+
+        function exitGame() {
+            saveGame();
+            try { window.close(); } catch (e) { /* 閉じられない環境もある */ }
+            try { history.back(); } catch (e) { }
+            // まだ画面が残っていたら（アプリ側で閉じられない場合）、戻るボタンでの終了を案内する
+            setTimeout(() => {
+                if (document.visibilityState === 'hidden') return;
+                showModal('ゲームを終了します', '<p style="margin-top:0.75rem;">もう一度スマホの戻るボタンを押すと終了します。</p>', {
+                    okLabel: '続ける', guard: false, onOk: ensureHistoryGuard
+                });
+            }, 400);
+        }
 
         // --- Labor (Stable) Logic ---
         let combo = 0;
@@ -695,11 +739,18 @@
         }
 
         // --- Modal ---
-        function showModal(title, bodyHtml) {
+        // opts: okLabel, cancelLabel（あると2つボタン）, onOk, onCancel, guard（false なら戻るボタンの見張りを積まない）
+        let modalOpts = {};
+        function showModal(title, bodyHtml, opts = {}) {
+            modalOpts = opts;
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').innerHTML = bodyHtml;
+            document.getElementById('modal-close-btn').textContent = opts.okLabel || 'OK';
+            const cancel = document.getElementById('modal-cancel-btn');
+            cancel.style.display = opts.cancelLabel ? '' : 'none';
+            cancel.textContent = opts.cancelLabel || '';
             document.getElementById('modal-overlay').classList.add('open');
-            ensureHistoryGuard(); // 戻るボタンでダイアログを閉じられるように
+            if (opts.guard !== false) ensureHistoryGuard(); // 戻るボタンでダイアログを閉じられるように
         }
 
         function closeModal() {
@@ -1398,16 +1449,17 @@
                 html += '<div class="bet-list">' + combinations.map(c => {
                     const key = currentBetTab + '_' + c.key;
                     const amt = betSelections.amounts[key] || '';
-                    let label;
+                    let label, popHtml = '';
                     if (isSingle) {
+                        popHtml = `<div class="bet-pop">${popBadge(pop[c.key])}</div>`;
                         const h = race.entries[parseInt(c.key) - 1];
-                        label = `<span class="tap-detail" onclick="showHorseDetail(${parseInt(c.key)})">${gateBadge(parseInt(c.key))}<span class="bet-name">${h ? escapeHtml(h.name) : ''}</span>${popBadge(pop[c.key])}</span>`;
+                        label = `<span class="tap-detail" onclick="showHorseDetail(${parseInt(c.key)})">${gateBadge(parseInt(c.key))}<span class="bet-name">${h ? escapeHtml(h.name) : ''}</span></span>`;
                     } else {
                         label = comboHtml(currentBetTab, c.key);
                     }
                     return `<div class="bet-row ${amt ? 'has-bet' : ''}" data-key="${key}">
                         <div class="bet-combo">${label}</div>
-                        <div class="bet-odds">${c.odds.toFixed(1)}<small>倍</small><div class="bet-est"></div></div>
+                        <div class="bet-odds">${c.odds.toFixed(1)}<small>倍</small>${popHtml}<div class="bet-est"></div></div>
                         <button class="bet-minus" onclick="addBetChip('${currentBetTab}', '${c.key}', -1)" aria-label="減らす">−</button>
                         <input type="number" min="0" inputmode="numeric" placeholder="0" class="bet-input" data-key="${key}"
                             value="${amt}" oninput="updateBetAmount('${currentBetTab}', '${c.key}', this.value)">
