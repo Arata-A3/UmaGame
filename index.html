@@ -255,7 +255,7 @@
 
         // --- Version ---
         // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
-        const APP_VERSION = '1.7.0';
+        const APP_VERSION = '1.8.0';
 
         // --- Application State ---
         let state = {
@@ -307,7 +307,7 @@
         // --- Initialization ---
         function init() {
             console.log("UmaGame - Game Init", APP_VERSION);
-            loadHorseSvg();
+            loadHorseImage();
             document.getElementById('version-display').textContent = `UmaGame v${APP_VERSION}`;
             loadGame();
             updateUI();
@@ -1198,42 +1198,87 @@
             runRaceSimulation();
         }
 
-        // --- 馬のイラスト（assets/horse.svg を馬ごとの色に塗って使う） ---
-        // SVG の class（coat, mane, silk, gate など）に色を当てる。{{NUM}} は馬番に置き換わる
-        let horseSvgText = null;
+        // --- 馬のイラスト（assets/horse.png を馬ごとの色に塗り替えて使う） ---
+        // 元の絵は色ごとに塗り分けてある: 灰色の明るさで「体 127 / 奥の脚 82 / たてがみ 51 / 黒 0〜40」、
+        // 緑 = 勝負服、赤 = ゼッケン。これを馬ごとの毛色・勝負服・枠の色に置き換える
+        const HORSE_PNG = { w: 480, h: 303, footX: 265, footY: 300, noseX: 472, numX: 221, numY: 125, numSize: 30 };
+        let horseBaseImg = null; // 読み込み済みの元画像（失敗したら false）
         let horseImageCache = {};
-        function loadHorseSvg() {
-            if (horseSvgText !== null) return Promise.resolve();
-            return fetch('assets/horse.svg')
-                .then(r => r.ok ? r.text() : Promise.reject(new Error(r.status)))
-                .then(t => { horseSvgText = t; })
-                .catch(() => { horseSvgText = ''; }); // 読めないときはコードで描いた馬を使う
+        function loadHorseImage() {
+            if (horseBaseImg !== null) return Promise.resolve();
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => { horseBaseImg = img; resolve(); };
+                img.onerror = () => { horseBaseImg = false; resolve(); }; // 読めないときはコードで描いた馬を使う
+                img.src = 'assets/horse.png';
+            });
         }
 
-        function shadeColor(hex, amount) {
+        function hexToRgb(hex) {
             const n = parseInt(String(hex).slice(1), 16);
-            let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+            return [n >> 16, (n >> 8) & 255, n & 255];
+        }
+        function shadeColor(hex, amount) {
+            let [r, g, b] = hexToRgb(hex);
             const t = amount < 0 ? 0 : 255, a = Math.abs(amount);
             r = Math.round(r + (t - r) * a); g = Math.round(g + (t - g) * a); b = Math.round(b + (t - b) * a);
             return `rgb(${r},${g},${b})`;
         }
 
-        // 塗り終わった画像を返す（まだ準備中なら null）
+        // 塗り替えた画像（canvas）を返す。まだ準備中なら null
         function horseImage(h, gateColor, gateTextColor) {
-            if (!horseSvgText) return null;
+            if (!horseBaseImg) return null;
             const key = `${h.id}-${h.entryNo}`;
-            let img = horseImageCache[key];
-            if (!img) {
-                if (Object.keys(horseImageCache).length > 120) horseImageCache = {};
-                const css = `.coat{fill:${h.coat}}.coat-dark{fill:${shadeColor(h.coat, -0.18)}}.coat-light{fill:${shadeColor(h.coat, 0.45)}}`
-                    + `.mane{fill:${h.mane}}.silk{fill:${h.color}}.silk-dark{fill:${shadeColor(h.color, -0.25)}}`
-                    + `.gate{fill:${gateColor}}.gate-text{fill:${gateTextColor}}`;
-                const svg = horseSvgText.replace('</style>', `</style><style>${css}</style>`).split('{{NUM}}').join(String(h.entryNo));
-                img = new Image();
-                img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-                horseImageCache[key] = img;
+            let cv = horseImageCache[key];
+            if (cv) return cv;
+            if (Object.keys(horseImageCache).length > 120) horseImageCache = {};
+            const W = horseBaseImg.naturalWidth, H = horseBaseImg.naturalHeight;
+            cv = document.createElement('canvas');
+            cv.width = W; cv.height = H;
+            const c = cv.getContext('2d');
+            c.drawImage(horseBaseImg, 0, 0);
+            let data;
+            try { data = c.getImageData(0, 0, W, H); } catch (e) { return null; }
+            const d = data.data;
+            const coat = hexToRgb(h.coat), mane = hexToRgb(h.mane);
+            const coatDark = coat.map(v => Math.round(v * 0.75));
+            const silk = hexToRgb(h.color), gate = hexToRgb(gateColor);
+            // 灰色の明るさ → 色 の対応表（間はなめらかにつなぐ）
+            const ramp = [[0, [0, 0, 0]], [40, [38, 38, 38]], [51, mane], [82, coatDark], [127, coat], [255, [255, 255, 255]]];
+            const lut = new Array(256);
+            for (let L = 0; L < 256; L++) {
+                let i = 0;
+                while (i < ramp.length - 2 && L > ramp[i + 1][0]) i++;
+                const [l0, c0] = ramp[i], [l1, c1] = ramp[i + 1];
+                const t = Math.min(1, Math.max(0, (L - l0) / (l1 - l0)));
+                lut[L] = [0, 1, 2].map(k => Math.round(c0[k] + (c1[k] - c0[k]) * t));
             }
-            return img.complete && img.naturalWidth > 0 ? img : null;
+            const tint = (base, t) => t <= 1
+                ? base.map(v => v * t)
+                : base.map(v => v + (255 - v) * Math.min(1, (t - 1) * 1.5));
+            for (let p = 0; p < d.length; p += 4) {
+                if (d[p + 3] === 0) continue;
+                const r = d[p], g = d[p + 1], b = d[p + 2];
+                const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+                let out = null;
+                if (g - Math.max(r, b) > 40) out = tint(silk, g / 155);          // 勝負服（緑）
+                else if (r - Math.max(g, b) > 70) out = tint(gate, r / 250);     // ゼッケン（赤）
+                else if (mx - mn < 40) out = lut[Math.round(r * 0.3 + g * 0.59 + b * 0.11)]; // 馬（灰色）
+                if (out) { d[p] = out[0]; d[p + 1] = out[1]; d[p + 2] = out[2]; }
+            }
+            c.putImageData(data, 0, 0);
+            // ゼッケンの馬番
+            c.save();
+            c.translate(HORSE_PNG.numX, HORSE_PNG.numY);
+            c.rotate(-0.03);
+            c.font = `bold ${HORSE_PNG.numSize}px sans-serif`;
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillStyle = gateTextColor;
+            c.fillText(String(h.entryNo), 0, 1);
+            c.restore();
+            horseImageCache[key] = cv;
+            return cv;
         }
 
         // 着差（馬身）を競馬の表記にする
@@ -1703,19 +1748,17 @@
                 drawHud(w, order);
             }
 
-            // イラスト（assets/horse.svg）の馬を、メダルゲームの人形のように支柱の上で揺らして描く
+            // イラスト（assets/horse.png）の馬を、メダルゲームの人形のように支柱の上で揺らして描く
             // 読み込めないとき（オフラインなど）はコードで描いた馬で代用する
-            const SVG_W = 240, SVG_H = 214;          // horse.svg の大きさ
-            const SVG_FOOT_X = 118, SVG_FOOT_Y = 200; // 足元の位置（画像内）
-            const SVG_NOSE_X = 230;                   // 鼻先の位置（画像内）
+            const { w: SVG_W, h: SVG_H, footX: SVG_FOOT_X, footY: SVG_FOOT_Y, noseX: SVG_NOSE_X } = HORSE_PNG;
             function drawHorse(noseX, groundY, size, hh, phase) {
                 const g = hh.entryNo - 1;
                 const img = horseImage(hh, GATE_COLORS[g], GATE_TEXT[g]);
                 if (!img) { drawFigure(noseX - size * 0.6, groundY, size, 1, hh, phase); return; }
-                const H = size * 1.05, W = H * SVG_W / SVG_H;
+                const H = size * 0.9, W = H * SVG_W / SVG_H;
                 const footX = noseX - (SVG_NOSE_X - SVG_FOOT_X) / SVG_W * W;
                 const lift = Math.abs(Math.sin(phase)) * size * 0.06;
-                const rock = Math.sin(phase) * 0.07;
+                const rock = Math.sin(phase) * 0.04;
                 // 影と台座と支柱
                 ctx.fillStyle = 'rgba(0,0,0,0.28)';
                 ctx.beginPath(); ctx.ellipse(footX, groundY, W * 0.3, size * 0.06, 0, 0, Math.PI * 2); ctx.fill();
