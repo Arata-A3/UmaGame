@@ -254,7 +254,7 @@
 
         // --- Version ---
         // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
-        const APP_VERSION = '1.3.0';
+        const APP_VERSION = '1.4.0';
 
         // --- Application State ---
         let state = {
@@ -1211,11 +1211,11 @@
                 const q = Math.round(lengths * 4) / 4;
                 const whole = Math.floor(q), frac = q - whole;
                 const fracText = frac === 0.25 ? '1/4' : frac === 0.5 ? '1/2' : frac === 0.75 ? '3/4' : '';
-                return `${whole}${fracText ? ' ' + fracText : ''}馬身`;
+                return `${whole}馬身${fracText}`;
             }
             if (lengths < 3) {
                 const h = Math.round(lengths * 2) / 2;
-                return Number.isInteger(h) ? `${h}馬身` : `${Math.floor(h)} 1/2馬身`;
+                return Number.isInteger(h) ? `${h}馬身` : `${Math.floor(h)}馬身1/2`;
             }
             return `${Math.round(lengths)}馬身`;
         }
@@ -1347,7 +1347,78 @@
                 }
             }
 
-            // --- 描画 ---
+            // --- 描画（メダルゲーム風の楕円コースを斜め上から見る） ---
+            // コースの座標系: x=左右, z=奥行き（正が奥）。内ラチから外側へのずれを lane で表す
+            const initialRect = canvas.parentElement.getBoundingClientRect();
+            const portrait = initialRect.width < initialRect.height;
+            const TRACK = {
+                R: 1,                            // カーブの半径（内ラチ）
+                L: portrait ? 1.3 : 2.6,         // 直線の長さ（縦長画面では短くする）
+                width: 0.55                      // コースの幅
+            };
+            const CURVE_LEN = Math.PI * TRACK.R;
+            const LAP = 2 * TRACK.L + 2 * CURVE_LEN;
+            const FINISH_U = TRACK.L * 0.75;     // ゴール板の位置（手前の直線の右寄り）
+            const COURSE_LEN = LAP * race.distance / 1600; // 1600mで1周
+            const CAM_D = 3.4, CAM_H = portrait ? 4.2 : 2.4; // カメラの奥行きと高さ（縦長画面は高めから見下ろす）
+            const FIG = 0.5;                     // 人形の大きさ（コース座標）
+
+            // 枠の色（ゼッケン）
+            const GATE_COLORS = ['#f5f5f5', '#222222', '#d83030', '#2f62d8', '#f0c419', '#2e9e46', '#f28a1e', '#f37ab7'];
+            const GATE_TEXT = ['#000', '#fff', '#fff', '#fff', '#000', '#fff', '#000', '#000'];
+            // 毛色（馬ごとに固定）
+            const COATS = ['#7b4a2a', '#9c5530', '#4a2e1e', '#2a2421', '#8f8f8f', '#b06a35'];
+
+            entries.forEach(h => {
+                h.lane = 0.04 + (h.entryNo - 1) * 0.06; // ゲートの順に内から並ぶ
+                h.overrun = 0;
+                h.coat = COATS[h.id % COATS.length];
+            });
+
+            function trackPoint(u, o) {
+                u = ((u % LAP) + LAP) % LAP;
+                const r = TRACK.R + o, L = TRACK.L;
+                if (u < L) return { x: -L / 2 + u, z: -r };
+                u -= L;
+                if (u < CURVE_LEN) { const t = -Math.PI / 2 + u / TRACK.R; return { x: L / 2 + r * Math.cos(t), z: r * Math.sin(t) }; }
+                u -= CURVE_LEN;
+                if (u < L) return { x: L / 2 - u, z: r };
+                u -= L;
+                const t = Math.PI / 2 + u / TRACK.R;
+                return { x: -L / 2 + r * Math.cos(t), z: r * Math.sin(t) };
+            }
+
+            function horseU(h) {
+                return FINISH_U - COURSE_LEN * (1 - h.progress / 100) + COURSE_LEN * h.overrun / 100;
+            }
+
+            // 透視投影（view は画面へのはめ込み用の倍率と原点）
+            let view = { S: 100, ox: 0, oy: 0 };
+            function project(x, z, y = 0) {
+                const d = z + CAM_D;
+                return { X: view.ox + (x / d) * view.S, Y: view.oy + ((CAM_H - y) / d) * view.S, k: view.S / d };
+            }
+
+            function fitView(w, h, topReserve, bottomReserve) {
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                for (let u = 0; u < LAP; u += LAP / 80) {
+                    for (const o of [-0.05, TRACK.width + 0.12]) {
+                        const p = trackPoint(u, o);
+                        const d = p.z + CAM_D;
+                        const sx = p.x / d, syGround = CAM_H / d, syTop = (CAM_H - FIG * 1.3) / d;
+                        minX = Math.min(minX, sx); maxX = Math.max(maxX, sx);
+                        minY = Math.min(minY, syTop); maxY = Math.max(maxY, syGround);
+                    }
+                }
+                const availW = w - 16, availH = h - topReserve - bottomReserve;
+                const S = Math.min(availW / (maxX - minX), availH / (maxY - minY));
+                view = {
+                    S,
+                    ox: w / 2 - ((minX + maxX) / 2) * S,
+                    oy: topReserve + availH / 2 - ((minY + maxY) / 2) * S
+                };
+            }
+
             function resizeCanvas() {
                 const dpr = window.devicePixelRatio || 1;
                 const w = canvas.parentElement.clientWidth;
@@ -1360,125 +1431,331 @@
                 return { w, h };
             }
 
+            // 楕円の輪（o1〜o2）を塗る
+            function ringPath(o1, o2) {
+                ctx.beginPath();
+                const n = 120;
+                for (let i = 0; i <= n; i++) {
+                    const p = trackPoint(LAP * i / n, o2), s = project(p.x, p.z);
+                    i === 0 ? ctx.moveTo(s.X, s.Y) : ctx.lineTo(s.X, s.Y);
+                }
+                for (let i = n; i >= 0; i--) {
+                    const p = trackPoint(LAP * i / n, o1), s = project(p.x, p.z);
+                    ctx.lineTo(s.X, s.Y);
+                }
+                ctx.closePath();
+            }
+
+            function loopPath(o) {
+                ctx.beginPath();
+                const n = 120;
+                for (let i = 0; i <= n; i++) {
+                    const p = trackPoint(LAP * i / n, o), s = project(p.x, p.z);
+                    i === 0 ? ctx.moveTo(s.X, s.Y) : ctx.lineTo(s.X, s.Y);
+                }
+                ctx.closePath();
+            }
+
+            function drawCourse(w, h) {
+                // 筐体の外側
+                const bg = ctx.createLinearGradient(0, 0, 0, h);
+                bg.addColorStop(0, '#0b1020');
+                bg.addColorStop(1, '#1b2535');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, w, h);
+
+                // 外側の芝生
+                ringPath(TRACK.width, TRACK.width + 0.12);
+                ctx.fillStyle = '#16351f';
+                ctx.fill();
+
+                // コース
+                ringPath(0, TRACK.width);
+                ctx.fillStyle = isTurf ? '#2f7d3b' : '#8a6440';
+                ctx.fill();
+                // 走路のすじ
+                ctx.strokeStyle = isTurf ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.08)';
+                ctx.lineWidth = 1;
+                for (let o = 0.1; o < TRACK.width; o += 0.1) { loopPath(o); ctx.stroke(); }
+
+                // 内馬場
+                loopPath(-0.02);
+                ctx.fillStyle = '#2a5a30';
+                ctx.fill();
+                loopPath(-0.25);
+                ctx.fillStyle = '#336b39';
+                ctx.fill();
+
+                // 内馬場の看板（レース名）
+                const c = project(0, 0.1, 0);
+                const k = c.k;
+                ctx.save();
+                ctx.fillStyle = 'rgba(0,0,0,0.55)';
+                const bw = Math.min(w * 0.6, k * 1.6), bh = Math.max(16, k * 0.22);
+                ctx.fillRect(c.X - bw / 2, c.Y - bh / 2, bw, bh);
+                ctx.strokeStyle = '#d4af37';
+                ctx.strokeRect(c.X - bw / 2, c.Y - bh / 2, bw, bh);
+                ctx.fillStyle = '#d4af37';
+                ctx.font = `bold ${Math.max(10, Math.min(16, bh * 0.55))}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${race.name} ${isTurf ? '芝' : 'ダート'}${race.distance}m`, c.X, c.Y, bw - 8);
+                ctx.restore();
+
+                // 内ラチと外ラチ
+                ctx.strokeStyle = '#f0f0f0';
+                ctx.lineWidth = 2;
+                loopPath(-0.01); ctx.stroke();
+                loopPath(TRACK.width + 0.01); ctx.stroke();
+
+                // ゴールライン
+                const a = trackPoint(FINISH_U, 0), b = trackPoint(FINISH_U, TRACK.width);
+                const pa = project(a.x, a.z), pb = project(b.x, b.z);
+                ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(pa.X, pa.Y); ctx.lineTo(pb.X, pb.Y); ctx.stroke();
+            }
+
+            // ゴール板（人形と前後関係を合わせるため別に描く）
+            function drawGoalPost() {
+                const p = trackPoint(FINISH_U, TRACK.width + 0.06);
+                const base = project(p.x, p.z, 0), top = project(p.x, p.z, 0.45);
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = Math.max(2, base.k * 0.02);
+                ctx.beginPath(); ctx.moveTo(base.X, base.Y); ctx.lineTo(top.X, top.Y); ctx.stroke();
+                const bw = top.k * 0.32, bh = top.k * 0.12;
+                ctx.fillStyle = '#c62828';
+                ctx.fillRect(top.X - bw / 2, top.Y - bh, bw, bh);
+                ctx.fillStyle = '#fff';
+                ctx.font = `bold ${Math.max(8, bh * 0.7)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('GOAL', top.X, top.Y - bh / 2);
+            }
+
+            // 馬と騎手の人形（右向きで描き、左向きは反転）
+            function drawFigure(px, py, size, facing, horse, phase, pos) {
+                const s = size / 100;
+                ctx.save();
+                ctx.translate(px, py);
+
+                // 台座と影（人形らしさ）
+                ctx.fillStyle = 'rgba(0,0,0,0.35)';
+                ctx.beginPath(); ctx.ellipse(0, 0, 46 * s, 9 * s, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#3a3a3a';
+                ctx.beginPath(); ctx.ellipse(0, -2 * s, 30 * s, 6 * s, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#5a5a5a';
+                ctx.beginPath(); ctx.ellipse(0, -3 * s, 26 * s, 4 * s, 0, 0, Math.PI * 2); ctx.fill();
+
+                ctx.scale(facing * s, s);
+                const bob = Math.sin(phase * 2) * 2.5;
+                const outline = 'rgba(0,0,0,0.55)';
+
+                if (horse.dueling && !horse.finished && pos <= 3) {
+                    ctx.shadowColor = '#ffd700';
+                    ctx.shadowBlur = 14;
+                }
+
+                const legColor = horse.coat;
+                function leg(hx, hy, angle, far) {
+                    const knee = { x: hx + Math.sin(angle) * 18, y: hy + Math.cos(angle) * 18 };
+                    const bend = angle > 0 ? -0.6 : 0.4;
+                    const hoof = { x: knee.x + Math.sin(angle + bend) * 18, y: knee.y + Math.cos(angle + bend) * 18 };
+                    ctx.strokeStyle = far ? 'rgba(0,0,0,0.45)' : legColor;
+                    ctx.lineWidth = 7;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(knee.x, knee.y); ctx.lineTo(hoof.x, hoof.y); ctx.stroke();
+                    if (far) { ctx.strokeStyle = legColor; ctx.globalAlpha = 0.55; ctx.stroke(); ctx.globalAlpha = 1; }
+                }
+                const sw = Math.sin(phase), sw2 = Math.sin(phase + 0.6);
+                const hipY = -40 + bob;
+                // 奥側の脚
+                leg(-24, hipY, -sw2 * 0.85, true);
+                leg(22, hipY, sw2 * 0.85, true);
+
+                // しっぽ
+                ctx.strokeStyle = '#1e1410';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(-36, -50 + bob);
+                ctx.quadraticCurveTo(-52, -52 + bob + sw * 3, -58, -36 + bob);
+                ctx.stroke();
+
+                // 胴体
+                ctx.fillStyle = horse.coat;
+                ctx.strokeStyle = outline;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.ellipse(0, -50 + bob, 38, 15, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+                // 首と頭
+                ctx.beginPath();
+                ctx.moveTo(20, -60 + bob);
+                ctx.lineTo(44, -82 + bob);
+                ctx.lineTo(54, -76 + bob);
+                ctx.lineTo(34, -44 + bob);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.ellipse(54, -78 + bob, 13, 7, 0.55, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                // 耳とたてがみ
+                ctx.beginPath(); ctx.moveTo(45, -86 + bob); ctx.lineTo(47, -95 + bob); ctx.lineTo(51, -86 + bob); ctx.closePath(); ctx.fill();
+                ctx.strokeStyle = '#1e1410';
+                ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(22, -62 + bob); ctx.lineTo(43, -85 + bob); ctx.stroke();
+
+                // 光沢（プラスチックの人形らしく）
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.22)';
+                ctx.beginPath(); ctx.ellipse(-4, -58 + bob, 22, 5, -0.05, 0, Math.PI * 2); ctx.fill();
+
+                // 手前側の脚
+                leg(-24, hipY, sw * 0.85, false);
+                leg(22, hipY, -sw * 0.85, false);
+
+                // ゼッケン（枠の色と馬番）
+                const g = horse.entryNo - 1;
+                ctx.fillStyle = GATE_COLORS[g];
+                ctx.strokeStyle = outline;
+                ctx.lineWidth = 1;
+                ctx.fillRect(-16, -62 + bob, 24, 17);
+                ctx.strokeRect(-16, -62 + bob, 24, 17);
+                ctx.save();
+                ctx.scale(facing, 1); // 数字は反転させない
+                ctx.fillStyle = GATE_TEXT[g];
+                ctx.font = 'bold 13px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(horse.entryNo, facing * -4, -53 + bob);
+                ctx.restore();
+
+                // 騎手（勝負服は馬の色）
+                const silk = horse.color;
+                ctx.strokeStyle = outline;
+                ctx.lineWidth = 1.5;
+                // 脚（ブーツ）
+                ctx.fillStyle = '#f2f2f2';
+                ctx.beginPath(); ctx.ellipse(4, -64 + bob, 9, 5, 0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#222';
+                ctx.beginPath(); ctx.ellipse(10, -58 + bob, 5, 3, 0.3, 0, Math.PI * 2); ctx.fill();
+                // 上半身（前傾）
+                ctx.fillStyle = silk;
+                ctx.beginPath(); ctx.ellipse(6, -77 + bob, 8, 14, -1.0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                // 腕と手綱
+                ctx.strokeStyle = silk;
+                ctx.lineWidth = 5;
+                ctx.beginPath(); ctx.moveTo(14, -80 + bob); ctx.lineTo(30, -72 + bob); ctx.stroke();
+                ctx.strokeStyle = '#3b2a1a';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.moveTo(30, -72 + bob); ctx.lineTo(52, -76 + bob); ctx.stroke();
+                // 帽子
+                ctx.fillStyle = silk;
+                ctx.strokeStyle = outline;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(18, -89 + bob, 6.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(21, -90 + bob, 6, 2.5);
+
+                ctx.restore();
+            }
+
+            // 人形の上の目印（馬番・着順・スタミナ切れ）
+            function drawMarker(px, py, size, horse) {
+                const r = Math.max(7, size * 0.11);
+                const y = py - size * 1.12;
+                const g = horse.entryNo - 1;
+                ctx.beginPath();
+                ctx.arc(px, y, r, 0, Math.PI * 2);
+                ctx.fillStyle = GATE_COLORS[g];
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.fillStyle = GATE_TEXT[g];
+                ctx.font = `bold ${Math.round(r * 1.25)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(horse.entryNo, px, y + 1);
+                if (horse.finished) {
+                    ctx.fillStyle = horse.rank === 1 ? '#ffd700' : '#fff';
+                    ctx.font = `bold ${Math.round(r * 1.3)}px sans-serif`;
+                    ctx.fillText(`${horse.rank}着`, px + r * 2.6, y + 1);
+                } else if (horse.exhausted) {
+                    ctx.font = `${Math.round(r * 1.5)}px sans-serif`;
+                    ctx.fillText('💦', px + r * 2.2, y);
+                }
+            }
+
+            // 上部: 残り距離と、今の順位を馬番のチップで並べる
+            function drawHud(w, order) {
+                const leader = order[0];
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillStyle = '#fff';
+                ctx.fillText(finishedCount > 0 ? 'ゴール！' : `残り ${remainingMeters(leader.progress)}m`, 10, 16);
+
+                const chip = Math.min(26, (w - 20) / 8 - 4);
+                order.forEach((hh, i) => {
+                    const x = 10 + i * (chip + 4) + chip / 2, y = 42;
+                    const g = hh.entryNo - 1;
+                    ctx.beginPath();
+                    ctx.arc(x, y, chip / 2, 0, Math.PI * 2);
+                    ctx.fillStyle = GATE_COLORS[g];
+                    ctx.fill();
+                    ctx.strokeStyle = i === 0 ? '#ffd700' : 'rgba(255,255,255,0.4)';
+                    ctx.lineWidth = i === 0 ? 2.5 : 1;
+                    ctx.stroke();
+                    ctx.fillStyle = GATE_TEXT[g];
+                    ctx.font = `bold ${Math.round(chip * 0.5)}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(hh.entryNo, x, y + 1);
+                });
+            }
+
             function draw() {
                 const { w, h } = resizeCanvas();
-                const nameWidth = Math.min(110, w * 0.28);
-                const startX = nameWidth + 8;
-                const marginW = Math.min(90, w * 0.2); // 着順・着差の表示用
-                const finishX = w - marginW;
-                const trackLen = Math.max(10, finishX - startX);
-                const top = 44;            // 残り距離の表示分
-                const bottomReserve = 96;  // 実況欄の分
-                const spacing = Math.max(16, (h - top - bottomReserve) / entries.length);
-                const barHeight = Math.min(24, spacing * 0.65);
+                const topReserve = 62, bottomReserve = 96;
+                fitView(w, h, topReserve, bottomReserve);
                 const order = currentOrder();
                 const posOf = {};
                 order.forEach((hh, i) => posOf[hh.entryNo] = i + 1);
-                const leader = order[0];
 
-                // 背景とコース（芝は緑、ダートは茶色）
-                ctx.fillStyle = "#111";
-                ctx.fillRect(0, 0, w, h);
-                ctx.fillStyle = isTurf ? "#1e4d2b" : "#5a4128";
-                ctx.fillRect(startX, top - 8, trackLen, spacing * entries.length + 4);
+                drawCourse(w, h);
 
-                // 200mごとの距離標
-                ctx.font = "10px sans-serif";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "bottom";
-                for (let m = 200; m < race.distance; m += 200) {
-                    const x = startX + trackLen * (1 - m / race.distance);
-                    ctx.strokeStyle = m % 400 === 0 ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)";
-                    ctx.beginPath();
-                    ctx.moveTo(x, top - 8);
-                    ctx.lineTo(x, top - 4 + spacing * entries.length);
-                    ctx.stroke();
-                    if (m % 400 === 0 && trackLen > 200) {
-                        ctx.fillStyle = "rgba(255,255,255,0.4)";
-                        ctx.fillText(`${m}`, x, top - 10);
-                    }
-                }
-
-                // ゴールライン
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-                ctx.setLineDash([5, 5]);
-                ctx.beginPath();
-                ctx.moveTo(finishX, top - 8);
-                ctx.lineTo(finishX, top - 4 + spacing * entries.length);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                // 残り距離
-                ctx.textAlign = "left";
-                ctx.textBaseline = "middle";
-                ctx.font = "bold 14px sans-serif";
-                ctx.fillStyle = "#fff";
-                const rem = remainingMeters(leader.progress);
-                const remText = finishedCount > 0 ? "ゴール！" : `残り ${rem}m`;
-                ctx.fillText(remText, 10, 16);
-                const remW = ctx.measureText(remText).width;
-                ctx.font = "12px sans-serif";
-                ctx.fillStyle = "rgba(255,255,255,0.55)";
-                ctx.fillText(`${isTurf ? '芝' : 'ダート'}${race.distance}m`, 10 + remW + 10, 16);
-
-                const fontSize = Math.max(10, Math.min(13, barHeight * 0.6));
-                entries.forEach((horse, i) => {
-                    const y = top + i * spacing;
-                    const barWidth = (horse.progress / 100) * trackLen;
-                    const midY = y + barHeight / 2;
-
-                    // 上位争いで競り合っている馬だけ光らせる
-                    ctx.save();
-                    if (horse.dueling && !horse.finished && posOf[horse.entryNo] <= 3) {
-                        ctx.shadowColor = "#ffd700";
-                        ctx.shadowBlur = 12;
-                    }
-                    // スタミナ切れは少し暗く
-                    ctx.globalAlpha = horse.exhausted && !horse.finished ? 0.6 : 1;
-                    ctx.fillStyle = horse.color;
-                    ctx.fillRect(startX, y, barWidth, barHeight);
-                    ctx.restore();
-                    ctx.strokeStyle = "rgba(255,255,255,0.5)";
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(startX + 0.5, y + 0.5, Math.max(0, barWidth - 1), barHeight - 1);
-
-                    // 出走番号と馬名
-                    ctx.fillStyle = "white";
-                    ctx.font = `bold ${fontSize}px sans-serif`;
-                    ctx.textAlign = "right";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText(`${horse.entryNo}. ${horse.name.substring(0, 6)}`, nameWidth, midY, nameWidth);
-
-                    // 走行中: 先端に現在の順位（1位は金色）、スタミナ切れは汗
-                    if (!horse.finished) {
-                        const pos = posOf[horse.entryNo];
-                        const r = Math.max(7, barHeight * 0.42);
-                        const cx = Math.max(startX + r, startX + barWidth - r - 1);
-                        ctx.beginPath();
-                        ctx.arc(cx, midY, r, 0, Math.PI * 2);
-                        ctx.fillStyle = pos === 1 ? "#ffd700" : "rgba(0,0,0,0.65)";
-                        ctx.fill();
-                        ctx.fillStyle = pos === 1 ? "#000" : "#fff";
-                        ctx.textAlign = "center";
-                        ctx.font = `bold ${Math.round(r * 1.2)}px sans-serif`;
-                        ctx.fillText(pos, cx, midY + 1);
-                        if (horse.exhausted) {
-                            ctx.font = `${Math.round(r * 1.6)}px sans-serif`;
-                            ctx.fillText('💦', cx + r * 2.2, midY);
-                        }
-                    } else {
-                        // ゴール後: 着順と着差
-                        ctx.textAlign = "left";
-                        ctx.fillStyle = horse.rank === 1 ? "gold" : "white";
-                        ctx.font = `bold ${fontSize}px sans-serif`;
-                        ctx.fillText(`${horse.rank}着`, finishX + 6, midY);
-                        if (horse.rank > 1 && horse.marginLabel) {
-                            ctx.fillStyle = "rgba(255,255,255,0.65)";
-                            ctx.font = `${Math.max(9, fontSize - 2)}px sans-serif`;
-                            ctx.fillText(horse.marginLabel, finishX + 6 + fontSize * 2.2, midY, marginW - fontSize * 2.4);
-                        }
-                    }
+                // 奥から順に描く（人形とゴール板）
+                const items = entries.map(hh => {
+                    const u = horseU(hh);
+                    const p = trackPoint(u, hh.lane);
+                    const ahead = trackPoint(u + 0.02, hh.lane);
+                    const sp = project(p.x, p.z), sa = project(ahead.x, ahead.z);
+                    return { z: p.z, draw: () => {
+                        const size = sp.k * FIG;
+                        const facing = sa.X >= sp.X ? 1 : -1;
+                        const phase = u * 18;
+                        drawFigure(sp.X, sp.Y, size, facing, hh, phase, posOf[hh.entryNo]);
+                    }, marker: () => drawMarker(sp.X, sp.Y, sp.k * FIG, hh) };
                 });
+                const gp = trackPoint(FINISH_U, TRACK.width + 0.06);
+                items.push({ z: gp.z, draw: drawGoalPost });
+                items.sort((a, b) => b.z - a.z).forEach(it => it.draw());
+                items.forEach(it => it.marker && it.marker());
+
+                drawHud(w, order);
+            }
+
+            // 順位に応じてコース取りを少しずつ変える（先頭は内ラチ沿い、後ろほど外）
+            function updateLanes() {
+                const order = currentOrder();
+                order.forEach((hh, i) => {
+                    const target = 0.04 + i * 0.06;
+                    hh.lane += (target - hh.lane) * 0.01;
+                });
+            }
+
+            // ゴール後も少し流して止まる
+            function coast(hh) {
+                if (!hh.finished) return;
+                hh.coastSpeed = hh.coastSpeed === undefined ? (hh.lastDelta || BASE_STEP) : hh.coastSpeed * 0.985;
+                hh.overrun += hh.coastSpeed;
             }
 
             // 1ティック進め、ゴールした馬にゴール時刻と着差を付ける
@@ -1494,39 +1771,41 @@
                         if (r > 0) hh.marginLabel = marginLabel(marginBetween(byRank[r - 1], hh));
                     }
                 }
+                entries.forEach(coast);
+                updateLanes();
             }
 
+            let stopped = false;
             function finish() {
                 if (finished) return;
                 finished = true;
                 skipBtn.style.display = 'none';
-                cancelAnimationFrame(raceId);
-                // 少し待ってから結果発表
+                // 少し待ってから結果発表（その間もゴール後の流しを描く）
                 setTimeout(() => {
+                    stopped = true;
+                    cancelAnimationFrame(raceId);
                     showResult(entries.slice().sort((a, b) => a.rank - b.rank));
-                }, 1200);
+                }, 1500);
             }
 
             // 経過時間に応じて決まった回数だけ進める（画面のリフレッシュレートに左右されない）
             function animate(now) {
-                if (finished) return;
+                if (stopped) return;
                 if (lastTime === null) lastTime = now;
                 const elapsed = Math.min(0.1, (now - lastTime) / 1000);
                 lastTime = now;
                 tickBudget += elapsed * TICKS_PER_SEC * (state.raceSpeed || 1.0);
-                while (tickBudget >= 1 && finishedCount < entries.length) {
-                    advance();
+                while (tickBudget >= 1) {
+                    if (finishedCount < entries.length) advance();
+                    else { entries.forEach(coast); tick++; }
                     tickBudget -= 1;
                 }
 
                 updateCommentary();
                 draw();
 
-                if (finishedCount < entries.length) {
-                    raceId = requestAnimationFrame(animate);
-                } else {
-                    finish();
-                }
+                if (finishedCount >= entries.length) finish();
+                raceId = requestAnimationFrame(animate);
             }
 
             // スキップ: 残りを一気に走らせて結果へ
