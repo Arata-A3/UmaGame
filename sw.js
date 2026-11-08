@@ -1,5 +1,5 @@
 // 更新を配信したいときは CACHE_NAME の番号を上げる
-const CACHE_NAME = 'umagame-v2';
+const CACHE_NAME = 'umagame-v3';
 const ASSETS = [
   './',
   './index.html',

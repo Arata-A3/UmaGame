@@ -21,11 +21,12 @@
             onclick="switchScreen('main-menu-screen')">
             UmaGame
             <span style="font-size:0.8rem; font-weight:normal; color:#888;">第<span id="race-count-display">0</span>回
-                レース</span>
+                レース <span id="title-display" style="color:var(--accent-gold);"></span></span>
         </div>
         <div class="coin-display" style="display:flex; flex-direction:column; align-items:flex-end;">
             <div><span class="coin-icon">💰</span> <span id="coin-count">0</span></div>
-            <div style="font-size:0.75rem; color:#aaa;">目標: 10,000</div>
+            <div id="debt-display" style="font-size:0.75rem; color:#ff6b6b; display:none;">借金: <span id="debt-count">0</span></div>
+            <div style="font-size:0.75rem; color:#aaa;">目標: <span id="goal-display">10,000</span></div>
         </div>
     </header>
 
@@ -42,6 +43,10 @@
                 <button id="menu-stable-btn" class="btn"
                     style="display:block; width:100%; margin-bottom:1rem; padding: 1.5rem; font-size:1.2rem; background:var(--bg-color); color:var(--text-primary); border:1px solid var(--accent-emerald);">🧹
                     厩舎</button>
+                <button id="menu-bank-btn" class="btn"
+                    style="display:block; width:100%; margin-bottom:1rem; padding: 1rem; font-size:1.1rem; background:var(--bg-color); color:var(--text-primary); border:1px solid #6b8cff;">🏦
+                    銀行（借入・返済）</button>
+                <div id="goal-record" style="text-align:left; font-size:0.85rem; color:#ccc; margin-bottom:1rem;"></div>
                 <button id="menu-settings-btn" class="btn"
                     style="display:block; width:100%; padding: 1rem; font-size:1rem; background:rgba(255,255,255,0.1); color:#fff;">⚙
                     設定</button>
@@ -86,11 +91,43 @@
             </div>
         </section>
 
+        <!-- 画面B: 銀行 -->
+        <section id="bank-screen" class="screen">
+            <div class="glass-card" style="margin: auto; max-width: 400px; width: 100%;">
+                <h2 style="margin-bottom:1rem; text-align:center;">🏦 銀行</h2>
+                <p style="font-size:0.85rem; color:#ccc; margin-bottom:1rem;">
+                    コインを借りられます。借りるときに<b style="color:#ff6b6b;">10%の利子</b>が借金に上乗せされます。
+                    目標の達成は「所持金 − 借金」で判定されます。</p>
+                <div class="bank-row"><span>所持金</span><span id="bank-coins">0</span></div>
+                <div class="bank-row"><span>借金</span><span id="bank-debt" style="color:#ff6b6b;">0</span></div>
+                <div class="bank-row"><span>借入限度額</span><span id="bank-limit">0</span></div>
+                <div class="bank-row" style="border:none;"><span>純資産</span><span id="bank-net" style="color:var(--accent-gold);">0</span></div>
+                <h3 style="margin:1rem 0 0.5rem; font-size:1rem;">借りる</h3>
+                <div class="bank-buttons">
+                    <button class="btn bank-borrow-btn" data-amount="100">100</button>
+                    <button class="btn bank-borrow-btn" data-amount="500">500</button>
+                    <button class="btn bank-borrow-btn" data-amount="max">限度額まで</button>
+                </div>
+                <h3 style="margin:1rem 0 0.5rem; font-size:1rem;">返す</h3>
+                <div class="bank-buttons">
+                    <button class="btn bank-repay-btn" data-amount="100">100</button>
+                    <button class="btn bank-repay-btn" data-amount="500">500</button>
+                    <button class="btn bank-repay-btn" data-amount="max">全額</button>
+                </div>
+                <p id="bank-message" style="min-height:1.5em; margin-top:1rem; font-size:0.85rem; color:var(--accent-gold); text-align:center;"></p>
+                <button id="bank-back-btn" class="btn"
+                    style="display:block; width:100%; padding: 1rem; margin-top:0.5rem; background:var(--bg-color); color:var(--text-primary); border:1px solid #555;">◀
+                    メニューに戻る</button>
+            </div>
+        </section>
+
         <!-- 画面1: 厩務 (資金稼ぎ) -->
         <section id="stable-screen" class="screen">
-            <div class="glass-card">
+            <div class="glass-card stable-info">
                 <h2>厩舎の清掃</h2>
-                <p>所持金が10コイン以下の時のみ、ここをタップして資金を貯めることができます。</p>
+                <p id="stable-message" style="font-size:0.85rem;"></p>
+                <div class="stable-progress"><div id="stable-progress-bar"></div></div>
+                <div id="combo-display" class="combo-display"></div>
             </div>
             <div id="dirt-field" class="dirt-container">
                 <!-- ターゲットがここに出現 -->
@@ -101,7 +138,7 @@
         <section id="paddock-screen" class="screen">
             <div class="glass-card">
                 <h2 id="race-title-display">出馬表</h2>
-                <p>次のレースに出走する馬たちです。距離への適性（SP/ST）や調子をチェックしましょう。</p>
+                <p style="font-size:0.85rem;">SP(スピード)は巡航速度、ST(スタミナ)が距離に対して足りないと終盤に失速、GT(根性)は失速を抑え、ゴール前の競り合いで伸びます。芝・ダートの適性や調子(矢印)もチェックしましょう。</p>
             </div>
             <div class="horse-list glass-card" id="horse-entry-list">
                 <!-- 馬のリストがJSで挿入される -->
@@ -151,6 +188,15 @@
             </div>
         </section>
     </main>
+
+    <!-- 汎用ダイアログ -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal glass-card">
+            <h2 id="modal-title"></h2>
+            <div id="modal-body"></div>
+            <button id="modal-close-btn" class="btn btn-primary" style="margin-top:1.5rem; width:100%;">OK</button>
+        </div>
+    </div>
 
     <script>
         // --- Horse Database ---
@@ -215,9 +261,32 @@
             lastConditions: {}, // { horseId: condition }
             recentResults: [], // [{ winner: "", runnerUp: "", third: "" }]
             recentPlacements: {}, // 馬ごとの近走成績 { horseId: [1, 2, 5...] }
-            raceSpeed: 1.0
+            raceSpeed: 1.0,
+            debt: 0,
+            goalsReached: [] // [{ amount, race }]
         };
-        const TAP_REWARD = 1;
+
+        // 段階的な目標（純資産 = 所持金 − 借金 で判定）
+        const GOALS = [
+            { amount: 10000, title: "一人前の馬券師" },
+            { amount: 50000, title: "凄腕の勝負師" },
+            { amount: 200000, title: "競馬場の名物客" },
+            { amount: 1000000, title: "百万長者" },
+            { amount: 10000000, title: "伝説の馬券王" }
+        ];
+
+        // 銀行
+        const BORROW_INTEREST = 0.10;   // 借りた額に上乗せされる利子
+        const BASE_BORROW_LIMIT = 1000; // 目標を1つ達成するごとに倍になる
+
+        // 厩舎掃除
+        const STABLE_LIMIT = 100;       // 所持金がこの額未満の間だけ稼げる
+        const DIRT_SPAWN_MS = 700;
+        const DIRT_LIFETIME_MS = 3000;
+        const DIRT_MAX = 6;
+        const COMBO_WINDOW_MS = 1500;   // この時間内に次を掃除するとコンボ継続
+        const CARROT_CHANCE = 0.06;     // ボーナスのにんじん
+        const CARROT_REWARD = 10;
         let raceInProgress = false; // レース演出中は画面遷移をロック
 
         let deferredPrompt;
@@ -245,6 +314,11 @@
             document.getElementById('menu-race-btn').addEventListener('click', () => switchScreen('paddock-screen'));
             document.getElementById('menu-stable-btn').addEventListener('click', () => switchScreen('stable-screen'));
             document.getElementById('menu-settings-btn').addEventListener('click', () => switchScreen('settings-screen'));
+            document.getElementById('menu-bank-btn').addEventListener('click', () => switchScreen('bank-screen'));
+            document.getElementById('bank-back-btn').addEventListener('click', () => switchScreen('main-menu-screen'));
+            document.querySelectorAll('.bank-borrow-btn').forEach(b => b.addEventListener('click', () => borrow(b.dataset.amount)));
+            document.querySelectorAll('.bank-repay-btn').forEach(b => b.addEventListener('click', () => repay(b.dataset.amount)));
+            document.getElementById('modal-close-btn').addEventListener('click', closeModal);
 
             document.getElementById('speed-05-btn').addEventListener('click', () => setRaceSpeed(0.5));
             document.getElementById('speed-10-btn').addEventListener('click', () => setRaceSpeed(1.0));
@@ -264,7 +338,7 @@
 
             // 保存済みのレースがあればそれを再開（リロードで出馬表や調子を引き直せないようにする）
             const r = state.currentRace;
-            if (!r || !r.entries || r.seed === undefined || !r.odds || !r.odds.win) {
+            if (!r || !r.entries || r.seed === undefined || !r.odds || !r.odds.win || r.status === 'settled') {
                 prepareRace();
             } else if (r.status === 'running') {
                 // レース中にリロードされた場合は同じシードで再生し、決着させる
@@ -328,53 +402,231 @@
             if (raceInProgress && screenId !== 'race-screen' && screenId !== 'result-screen') return;
             screens.forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
+            if (screenId === 'bank-screen') renderBank();
+            if (screenId === 'stable-screen') renderStableInfo();
+            if (screenId === 'main-menu-screen') renderGoalRecord();
         }
 
         // --- Labor (Stable) Logic ---
+        let combo = 0;
+        let lastCleanTime = 0;
+
+        function canEarnAtStable() {
+            return state.coins < STABLE_LIMIT;
+        }
+
+        function comboReward() {
+            return Math.min(5, 1 + Math.floor(combo / 5));
+        }
+
+        function renderStableInfo() {
+            const msg = document.getElementById('stable-message');
+            const bar = document.getElementById('stable-progress-bar');
+            if (canEarnAtStable()) {
+                msg.innerHTML = `所持金が${STABLE_LIMIT}コイン未満の間、汚れをタップしてコインを稼げます。素早く続けて掃除するとコンボで報酬アップ！ たまに出る🥕は+${CARROT_REWARD}。`;
+            } else {
+                msg.innerHTML = `所持金が${STABLE_LIMIT}コイン以上あるので、いまは掃除の必要はありません。`;
+            }
+            bar.style.width = `${Math.min(100, state.coins / STABLE_LIMIT * 100)}%`;
+            const comboEl = document.getElementById('combo-display');
+            comboEl.textContent = combo >= 2 ? `${combo} COMBO!（1回 +${comboReward()}）` : '';
+        }
+
         function spawnDirtLoop() {
             setInterval(() => {
-                if (state.coins >= 10) return;
-                if (document.getElementById('stable-screen').classList.contains('active')) {
-                    createDirt();
+                if (!document.getElementById('stable-screen').classList.contains('active')) return;
+                if (!canEarnAtStable()) {
+                    dirtField.querySelectorAll('.dirt').forEach(d => d.remove());
+                    return;
                 }
-            }, 1500);
+                // コンボの受付時間が過ぎたらリセット
+                if (combo > 0 && Date.now() - lastCleanTime > COMBO_WINDOW_MS) {
+                    combo = 0;
+                    renderStableInfo();
+                }
+                if (dirtField.querySelectorAll('.dirt').length < DIRT_MAX) createDirt();
+            }, DIRT_SPAWN_MS);
         }
 
         function createDirt() {
+            const isCarrot = Math.random() < CARROT_CHANCE;
             const dirt = document.createElement('div');
-            dirt.className = 'dirt';
+            dirt.className = isCarrot ? 'dirt carrot' : 'dirt';
+            if (isCarrot) dirt.textContent = '🥕';
             const rect = dirtField.getBoundingClientRect();
-            const x = Math.random() * (rect.width - 40);
-            const y = Math.random() * (rect.height - 40);
+            const x = Math.random() * Math.max(0, rect.width - 56);
+            const y = Math.random() * Math.max(0, rect.height - 56);
             dirt.style.left = `${x}px`;
             dirt.style.top = `${y}px`;
+            // 汚れの形を毎回少し変える
+            if (!isCarrot) {
+                const r = () => 35 + Math.floor(Math.random() * 30);
+                dirt.style.borderRadius = `${r()}% ${r()}% ${r()}% ${r()}% / ${r()}% ${r()}% ${r()}% ${r()}%`;
+                dirt.style.setProperty('--rot', `${Math.floor(Math.random() * 360)}deg`);
+            }
 
-            dirt.onclick = (e) => {
+            dirt.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
-                if (state.coins >= 10) {
-                    dirt.remove();
-                    return;
-                }
-                state.coins += TAP_REWARD;
+                e.preventDefault();
+                if (dirt.dataset.cleaned) return;
+                dirt.dataset.cleaned = '1';
+                if (!canEarnAtStable()) { dirt.remove(); return; }
+
+                const now = Date.now();
+                combo = (now - lastCleanTime <= COMBO_WINDOW_MS) ? combo + 1 : 1;
+                lastCleanTime = now;
+
+                const reward = isCarrot ? CARROT_REWARD : comboReward();
+                state.coins = Math.min(STABLE_LIMIT, state.coins + reward);
                 updateUI();
                 saveGame(); // オートセーブ
-                dirt.remove();
-            };
+                renderStableInfo();
+
+                const fx = dirtField.getBoundingClientRect();
+                const cx = e.clientX - fx.left, cy = e.clientY - fx.top;
+                spawnFloatText(cx, cy, `+${reward}`, isCarrot);
+                spawnSparkles(cx, cy, isCarrot ? 14 : 8, isCarrot ? '#ff9f1c' : '#ffe680');
+                dirt.classList.add('cleaned');
+                setTimeout(() => dirt.remove(), 250);
+            });
 
             dirtField.appendChild(dirt);
-            setTimeout(() => { if (dirt.parentElement) dirt.remove(); }, 4000);
+            setTimeout(() => {
+                if (dirt.parentElement && !dirt.dataset.cleaned) {
+                    dirt.classList.add('fading');
+                    setTimeout(() => dirt.remove(), 300);
+                }
+            }, DIRT_LIFETIME_MS);
+        }
+
+        function spawnFloatText(x, y, text, big) {
+            const el = document.createElement('div');
+            el.className = big ? 'float-text big' : 'float-text';
+            el.textContent = text;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            dirtField.appendChild(el);
+            setTimeout(() => el.remove(), 900);
+        }
+
+        function spawnSparkles(x, y, count, color) {
+            for (let i = 0; i < count; i++) {
+                const sp = document.createElement('div');
+                sp.className = 'sparkle';
+                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+                const dist = 30 + Math.random() * 30;
+                sp.style.left = `${x}px`;
+                sp.style.top = `${y}px`;
+                sp.style.background = color;
+                sp.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+                sp.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+                dirtField.appendChild(sp);
+                setTimeout(() => sp.remove(), 600);
+            }
+        }
+
+        // --- Bank ---
+        function netAssets() {
+            return state.coins - (state.debt || 0);
+        }
+
+        function borrowLimit() {
+            return BASE_BORROW_LIMIT * Math.pow(2, (state.goalsReached || []).length);
+        }
+
+        function renderBank(message = '') {
+            document.getElementById('bank-coins').textContent = state.coins.toLocaleString();
+            document.getElementById('bank-debt').textContent = (state.debt || 0).toLocaleString();
+            document.getElementById('bank-limit').textContent = borrowLimit().toLocaleString();
+            document.getElementById('bank-net').textContent = netAssets().toLocaleString();
+            document.getElementById('bank-message').textContent = message;
+        }
+
+        function borrow(amountKey) {
+            // 借金（利子込み）が限度額を超えない範囲で、100コイン単位で借りる
+            const room = borrowLimit() - (state.debt || 0);
+            const maxPrincipal = Math.floor(room / (1 + BORROW_INTEREST) / 100) * 100;
+            const principal = amountKey === 'max' ? maxPrincipal : Math.min(parseInt(amountKey), maxPrincipal);
+            if (principal <= 0) { renderBank('これ以上は借りられません。'); return; }
+            const added = Math.round(principal * (1 + BORROW_INTEREST));
+            state.coins += principal;
+            state.debt = (state.debt || 0) + added;
+            updateUI();
+            saveGame();
+            renderBank(`${principal.toLocaleString()}コイン借りました（借金 +${added.toLocaleString()}）`);
+        }
+
+        function repay(amountKey) {
+            const debt = state.debt || 0;
+            if (debt <= 0) { renderBank('借金はありません。'); return; }
+            const want = amountKey === 'max' ? debt : Math.min(parseInt(amountKey), debt);
+            const pay = Math.min(want, state.coins);
+            if (pay <= 0) { renderBank('返せるコインがありません。'); return; }
+            state.coins -= pay;
+            state.debt = debt - pay;
+            updateUI();
+            saveGame();
+            renderBank(state.debt === 0 ? '完済しました！' : `${pay.toLocaleString()}コイン返しました。`);
+        }
+
+        // --- Goals ---
+        function nextGoal() {
+            return GOALS[(state.goalsReached || []).length] || null;
+        }
+
+        function currentTitle() {
+            const n = (state.goalsReached || []).length;
+            return n > 0 ? GOALS[n - 1].title : '';
+        }
+
+        function checkGoals() {
+            if (!state.goalsReached) state.goalsReached = [];
+            const reached = [];
+            let goal;
+            while ((goal = nextGoal()) && netAssets() >= goal.amount) {
+                state.goalsReached.push({ amount: goal.amount, race: state.raceCount || 0 });
+                reached.push(goal);
+            }
+            if (reached.length > 0) {
+                saveGame();
+                const last = reached[reached.length - 1];
+                const next = nextGoal();
+                showModal('🏆 目標達成！',
+                    `<p style="margin:1rem 0;">${state.raceCount || 0}回のレースで<br>純資産 <b style="color:var(--accent-gold);">${last.amount.toLocaleString()}</b> コインを達成しました！</p>
+                     <p>称号「<b style="color:var(--accent-gold);">${last.title}</b>」を獲得</p>
+                     <p style="margin-top:1rem; font-size:0.85rem; color:#ccc;">${next ? `次の目標: ${next.amount.toLocaleString()} コイン<br>借入限度額が ${borrowLimit().toLocaleString()} に増えました` : 'すべての目標を制覇しました！'}</p>`);
+            }
+        }
+
+        function renderGoalRecord() {
+            const el = document.getElementById('goal-record');
+            const list = state.goalsReached || [];
+            if (list.length === 0) { el.innerHTML = ''; return; }
+            el.innerHTML = '<div style="color:var(--accent-gold); font-weight:bold; margin-bottom:4px;">🏆 達成記録</div>' +
+                list.map((g, i) => `<div>${GOALS[i].title}（${g.amount.toLocaleString()}）: ${g.race ? g.race + '戦目' : '記録なし'}</div>`).join('');
+        }
+
+        // --- Modal ---
+        function showModal(title, bodyHtml) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = bodyHtml;
+            document.getElementById('modal-overlay').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('open');
         }
 
         // --- Race Preparation ---
         const RACE_TYPES = [
-            { name: "スプリントステークス", distance: 1200, label: "短距離", element: "G", spWeight: 0.7, stWeight: 0.1, gtWeight: 0.2 },
-            { name: "ダートスプリント", distance: 1200, label: "短距離", element: "D", spWeight: 0.7, stWeight: 0.1, gtWeight: 0.2 },
-            { name: "マイラーズカップ", distance: 1600, label: "マイル", element: "G", spWeight: 0.5, stWeight: 0.3, gtWeight: 0.2 },
-            { name: "ダートマイル", distance: 1600, label: "マイル", element: "D", spWeight: 0.5, stWeight: 0.3, gtWeight: 0.2 },
-            { name: "クラシックカップ", distance: 2000, label: "中距離", element: "G", spWeight: 0.3, stWeight: 0.5, gtWeight: 0.2 },
-            { name: "ダートクラシック", distance: 2000, label: "中距離", element: "D", spWeight: 0.3, stWeight: 0.5, gtWeight: 0.2 },
-            { name: "ステイヤーズステークス", distance: 2400, label: "長距離", element: "G", spWeight: 0.1, stWeight: 0.7, gtWeight: 0.2 },
-            { name: "ダートステイヤー", distance: 2400, label: "長距離", element: "D", spWeight: 0.1, stWeight: 0.7, gtWeight: 0.2 }
+            { name: "スプリントステークス", distance: 1200, label: "短距離", element: "G" },
+            { name: "ダートスプリント", distance: 1200, label: "短距離", element: "D" },
+            { name: "マイラーズカップ", distance: 1600, label: "マイル", element: "G" },
+            { name: "ダートマイル", distance: 1600, label: "マイル", element: "D" },
+            { name: "クラシックカップ", distance: 2000, label: "中距離", element: "G" },
+            { name: "ダートクラシック", distance: 2000, label: "中距離", element: "D" },
+            { name: "ステイヤーズステークス", distance: 2400, label: "長距離", element: "G" },
+            { name: "ダートステイヤー", distance: 2400, label: "長距離", element: "D" }
         ];
 
         function prepareRace() {
@@ -419,13 +671,23 @@
         }
 
         // --- Race Model (オッズ計算と実際のレースで共通) ---
-        const TICKS_PER_SEC = 60;   // 1.0x 時の1秒あたりのシミュレーション回数
-        const STEP_DIVISOR = 850;   // 進行速度の調整値（1.0xで約20秒で決着）
+        // 各馬は「巡航速度（スピード）」で走りながらスタミナを消費し、尽きると失速する。
+        // 終盤に競り合うと根性で伸びる。距離が長いほどスタミナの消費が大きい。
+        const TICKS_PER_SEC = 60;            // 1.0x 時の1秒あたりのシミュレーション回数
+        const BASE_STEP = 100 / (20 * 60);   // 平均的な馬が1.0xで約20秒でゴールする進み幅
+        // 能力の効き具合（大きいほど能力差が出て堅いレースになる）
+        const SPEED_EFFECT = 0.11;    // スピード
+        const SURFACE_PENALTY = 0.04; // 芝・ダートの適性外で遅くなる割合
+        const COND_EFFECT = 0.012;    // 調子1段階あたり
+        const STAMINA_NEED = 75;      // 2000mを平均ペースで走り切るのに必要なスタミナ
+        const STAMINA_CURVE = 1.5;    // 距離が伸びるほど必要スタミナが加速度的に増える
+        const FADE = 0.20;            // スタミナ切れの失速（根性で軽減）
+        const DUEL_BONUS = 0.04;      // 終盤の競り合いでの根性ボーナス（根性120で満額）
         // 波乱の起きやすさ（大きいほど荒れる）
-        const FORM_SPREAD = 0.12;   // その日の出来のばらつき
-        const DRIFT_NOISE = 0.025;  // レース中の脚色の揺らぎ
+        const FORM_SPREAD = 0.045;    // その日の出来のばらつき
+        const DRIFT_NOISE = 0.02;     // レース中の脚色の揺らぎ
         const DRIFT_DECAY = 0.995;
-        const DRIFT_MAX = 0.2;
+        const DRIFT_MAX = 0.08;
 
         // シード付き乱数（同じシードなら同じ結果になる）
         function mulberry32(a) {
@@ -443,29 +705,34 @@
             return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rng());
         }
 
-        function horsePower(h, raceType) {
-            const surfaceMultiplier = (h.apt === raceType.element) ? 1.15 : 0.85;
-            const base = (h.speed * raceType.spWeight) + (h.stamina * raceType.stWeight) + (h.guts * raceType.gtWeight);
-            return base * (0.9 + h.condition * 0.05) * surfaceMultiplier;
-        }
-
-        // 脚質ごとの区間ボーナス
+        // 脚質ごとの区間ごとのペース（速く走るほどスタミナを多く使う）
         function styleModifier(type, progress) {
-            if (type === "逃" && progress < 40) return 1.15;
-            if (type === "先" && progress < 60) return 1.06;
-            if (type === "差" && progress >= 50 && progress < 90) return 1.08;
-            if (type === "追" && progress >= 70) return 1.15;
+            switch (type) {
+                case "逃": return progress < 50 ? 1.045 : 1.0;
+                case "先": return progress < 60 ? 1.025 : 1.0;
+                case "差": return (progress >= 55 && progress < 90) ? 1.04 : 1.0;
+                case "追": return progress >= 70 ? 1.10 : (progress < 50 ? 0.98 : 1.0);
+            }
             return 1.0;
         }
 
         // light=true はオッズ計算用（馬データのコピーを省いて高速化）
-        function createRunners(entries, raceType, rng, light = false) {
+        function createRunners(entries, race, rng, light = false) {
+            const drainPerUnit = Math.pow(race.distance / 2000, STAMINA_CURVE) * STAMINA_NEED / 100;
             return entries.map((h, i) => ({
                 ...(light ? { type: h.type } : h),
                 entryNo: i + 1,
-                power: horsePower(h, raceType),
-                form: 1 + gaussian(rng) * FORM_SPREAD, // その日の出来（隠れ要素）
-                drift: 0,                        // レース中の脚色の揺らぎ
+                cruise: (1 + (h.speed - 85) / 85 * SPEED_EFFECT)
+                    * (h.apt === race.type.element ? 1 : 1 - SURFACE_PENALTY)
+                    * (1 + (h.condition - 3) * COND_EFFECT)
+                    * (1 + gaussian(rng) * FORM_SPREAD), // その日の出来（隠れ要素）
+                hp: h.stamina,
+                drain: drainPerUnit,
+                fadeMult: 1 - FADE * Math.max(0.2, 1.2 - h.guts / 150),
+                duelMult: 1 + DUEL_BONUS * h.guts / 120,
+                exhausted: false,
+                dueling: false,
+                drift: 0,
                 progress: 0,
                 finished: false,
                 rank: 0
@@ -477,13 +744,33 @@
             let newlyFinished = null;
             const noiseScale = DRIFT_NOISE * Math.sqrt(dt);
             const decay = Math.pow(DRIFT_DECAY, dt);
-            const k = dt / STEP_DIVISOR;
-            for (let i = 0; i < runners.length; i++) {
+            const n = runners.length;
+            for (let i = 0; i < n; i++) {
                 const h = runners[i];
                 if (h.finished) continue;
                 let d = h.drift * decay + (rng() - 0.5) * noiseScale;
                 h.drift = d > DRIFT_MAX ? DRIFT_MAX : (d < -DRIFT_MAX ? -DRIFT_MAX : d);
-                h.progress += h.power * h.form * (1 + h.drift) * styleModifier(h.type, h.progress) * k;
+
+                const pace = styleModifier(h.type, h.progress);
+                let v = h.cruise * pace * (1 + h.drift);
+                if (h.exhausted) v *= h.fadeMult;
+
+                // 終盤（残り25%）に前後2以内の馬がいれば競り合い
+                h.dueling = false;
+                if (h.progress >= 75) {
+                    for (let j = 0; j < n; j++) {
+                        const o = runners[j];
+                        if (j !== i && !o.finished && Math.abs(o.progress - h.progress) < 2) { h.dueling = true; break; }
+                    }
+                    if (h.dueling) v *= h.duelMult;
+                }
+
+                const delta = BASE_STEP * v * dt;
+                h.progress += delta;
+                if (!h.exhausted) {
+                    h.hp -= delta * h.drain * pace * pace;
+                    if (h.hp <= 0) h.exhausted = true;
+                }
                 if (h.progress >= 100) (newlyFinished || (newlyFinished = [])).push(h);
             }
             if (newlyFinished) {
@@ -575,8 +862,8 @@
 
         // --- Odds (Parimutuel Simulation) ---
         // 実際のレースと同じモデルで何千回もシミュレーションし、勝率・複勝率からオッズを作る
-        const ODDS_SIMULATIONS = 2000;
-        const ODDS_SIM_DT = 8;
+        const ODDS_SIMULATIONS = 1500;
+        const ODDS_SIM_DT = 10;
 
         function estimateProbabilities(race) {
             const n = race.entries.length;
@@ -584,7 +871,7 @@
             const top3 = new Array(n).fill(0);
             const rng = Math.random;
             for (let s = 0; s < ODDS_SIMULATIONS; s++) {
-                const runners = createRunners(race.entries, race.type, rng, true);
+                const runners = createRunners(race.entries, race, rng, true);
                 let finished = 0;
                 while (finished < 3) finished = stepRunners(runners, rng, ODDS_SIM_DT, finished);
                 runners.forEach((h, i) => {
@@ -914,7 +1201,7 @@
 
             // シード付き乱数で走らせるので、何度再生しても同じ結果になる
             const rng = mulberry32(race.seed);
-            const entries = createRunners(race.entries, race.type, rng);
+            const entries = createRunners(race.entries, race, rng);
 
             let finishedCount = 0;
             let tickBudget = 0;
@@ -1088,14 +1375,15 @@
             state.raceCount = (state.raceCount || 0) + 1;
             state.coins += totalPayout;
             state.bets = [];
+            state.currentRace.status = 'settled'; // 精算済み（リロードしても二重に払い戻さない）
             document.getElementById('payout-amount').innerText = totalPayout;
-
-            // 精算が済んだらすぐ次のレースを用意して保存（同じレースに再度賭けられないようにする）
-            prepareRace();
 
             updateUI();
             saveGame();
             switchScreen('result-screen');
+
+            // 次のレース（オッズ計算に少し時間がかかる）は結果を表示してから用意する
+            setTimeout(prepareRace, 50);
 
             document.getElementById('next-race-btn').onclick = () => {
                 switchScreen('paddock-screen');
@@ -1108,12 +1396,13 @@
             const raceCountEl = document.getElementById('race-count-display');
             if (raceCountEl) raceCountEl.innerText = state.raceCount || 0;
 
-            if (state.coins >= 10000 && !state.gameCleared) {
-                state.gameCleared = true;
-                setTimeout(() => {
-                    alert(`おめでとうございます！\n${state.raceCount || 0}回のレースで10,000コインを達成しました！`);
-                }, 500);
-            }
+            const debt = state.debt || 0;
+            document.getElementById('debt-display').style.display = debt > 0 ? 'block' : 'none';
+            document.getElementById('debt-count').innerText = debt.toLocaleString();
+            checkGoals(); // 称号の表示より先に判定する
+            document.getElementById('title-display').innerText = currentTitle() ? `/ ${currentTitle()}` : '';
+            const goal = nextGoal();
+            document.getElementById('goal-display').innerText = goal ? goal.amount.toLocaleString() : '全制覇！';
         }
 
         function saveGame() {
@@ -1138,6 +1427,14 @@
             } catch (e) {
                 console.warn("Load failed or no save data:", e);
             }
+
+            // 旧バージョンの「10,000コイン達成」を目標の達成記録に引き継ぐ
+            if (!state.goalsReached) state.goalsReached = [];
+            if (state.gameCleared && state.goalsReached.length === 0) {
+                state.goalsReached.push({ amount: GOALS[0].amount, race: null });
+            }
+            delete state.gameCleared;
+            if (typeof state.debt !== 'number') state.debt = 0;
 
             // 初期の過去5レース結果（予想指標用）を用意する
             if (state.recentResults.length === 0) {
