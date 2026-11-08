@@ -51,6 +51,7 @@
                     style="display:block; width:100%; padding: 1rem; font-size:1rem; background:rgba(255,255,255,0.1); color:#fff;">⚙
                     設定</button>
             </div>
+            <div id="version-display" class="version-label"></div>
         </section>
 
         <!-- 画面S: 設定 -->
@@ -253,6 +254,10 @@
             { id: 50, name: "マシュマロダンス", speed: 66, stamina: 45, guts: 66, type: "追", apt: "D", color: "#FFF5EE" }
         ];
 
+        // --- Version ---
+        // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
+        const APP_VERSION = '1.2.1';
+
         // --- Application State ---
         let state = {
             coins: 10,
@@ -302,7 +307,8 @@
 
         // --- Initialization ---
         function init() {
-            console.log("UmaGame - Game Init");
+            console.log("UmaGame - Game Init", APP_VERSION);
+            document.getElementById('version-display').textContent = `UmaGame v${APP_VERSION}`;
             loadGame();
             updateUI();
             spawnDirtLoop();
@@ -351,7 +357,7 @@
             // Service Worker Registration
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('./sw.js')
+                    navigator.serviceWorker.register(`./sw.js?v=${APP_VERSION}`)
                         .then(reg => console.log('SW Registered!', reg))
                         .catch(err => console.log('SW Registration failed', err));
                 });

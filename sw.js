@@ -1,5 +1,6 @@
-// 更新を配信したいときは CACHE_NAME の番号を上げる
-const CACHE_NAME = 'umagame-v3';
+// キャッシュ名は index.html の APP_VERSION（登録時の ?v=）から決まる
+const APP_VERSION = new URL(self.location.href).searchParams.get('v') || 'dev';
+const CACHE_NAME = `umagame-${APP_VERSION}`;
 const ASSETS = [
   './',
   './index.html',

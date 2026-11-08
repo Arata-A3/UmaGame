@@ -14,6 +14,7 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Outfit', 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent; /* タップ時の青いハイライトを消す */
 }
 
 body {
@@ -132,6 +133,15 @@ main {
     color: #ff9f1c;
     text-shadow: 0 0 8px rgba(255,159,28,0.6);
 }
+
+#stable-screen,
+#stable-screen * {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+.dirt:focus { outline: none; }
 
 .dirt-container {
     flex: 1;
@@ -317,4 +327,13 @@ nav {
         grid-template-columns: 30px 1fr 40px 60px;
         font-size: 0.9rem;
     }
+}
+
+/* バージョン表示 */
+.version-label {
+    text-align: center;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.25);
+    padding: 0.5rem 0;
+    letter-spacing: 1px;
 }
