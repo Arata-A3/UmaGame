@@ -17,16 +17,17 @@
 
 <body>
     <header>
-        <div class="logo" style="display:flex; flex-direction:column; gap:4px; cursor:pointer;"
-            onclick="switchScreen('main-menu-screen')">
+        <button id="header-back-btn" class="header-back" aria-label="戻る">◀</button>
+        <div class="logo" onclick="switchScreen('main-menu-screen')">
             UmaGame
-            <span style="font-size:0.8rem; font-weight:normal; color:#888;">第<span id="race-count-display">0</span>回
-                レース <span id="title-display" style="color:var(--accent-gold);"></span></span>
+            <span class="logo-sub">第<span id="race-count-display">0</span>回 レース <span id="title-display"></span></span>
         </div>
-        <div class="coin-display" style="display:flex; flex-direction:column; align-items:flex-end;">
-            <div><span class="coin-icon">💰</span> <span id="coin-count">0</span></div>
-            <div id="debt-display" style="font-size:0.75rem; color:#ff6b6b; display:none;">借金: <span id="debt-count">0</span></div>
-            <div style="font-size:0.75rem; color:#aaa;">目標: <span id="goal-display">10,000</span></div>
+        <div class="coin-display">
+            <div class="coin-main"><span class="coin-icon">💰</span><span id="coin-count">0</span></div>
+            <div class="coin-sub">
+                <span id="debt-display" style="display:none;">借金 <span id="debt-count">0</span></span>
+                <span>目標 <span id="goal-display">10,000</span></span>
+            </div>
         </div>
     </header>
 
@@ -43,9 +44,14 @@
                 <button id="menu-stable-btn" class="btn"
                     style="display:block; width:100%; margin-bottom:1rem; padding: 1.5rem; font-size:1.2rem; background:var(--bg-color); color:var(--text-primary); border:1px solid var(--accent-emerald);">🧹
                     厩舎</button>
-                <button id="menu-bank-btn" class="btn"
-                    style="display:block; width:100%; margin-bottom:1rem; padding: 1rem; font-size:1.1rem; background:var(--bg-color); color:var(--text-primary); border:1px solid #6b8cff;">🏦
-                    銀行（借入・返済）</button>
+                <div style="display:flex; gap:10px; margin-bottom:1rem;">
+                    <button id="menu-bank-btn" class="btn"
+                        style="flex:1; padding: 1rem 0.5rem; font-size:1rem; background:var(--bg-color); color:var(--text-primary); border:1px solid #6b8cff;">🏦
+                        銀行</button>
+                    <button id="menu-stats-btn" class="btn"
+                        style="flex:1; padding: 1rem 0.5rem; font-size:1rem; background:var(--bg-color); color:var(--text-primary); border:1px solid #c58cff;">📊
+                        成績</button>
+                </div>
                 <div id="goal-record" style="text-align:left; font-size:0.85rem; color:#ccc; margin-bottom:1rem;"></div>
                 <button id="menu-settings-btn" class="btn"
                     style="display:block; width:100%; padding: 1rem; font-size:1rem; background:rgba(255,255,255,0.1); color:#fff;">⚙
@@ -79,16 +85,12 @@
                         style="width:100%; padding:1rem;">アプリをインストール</button>
                 </div>
 
-                <div style="margin: 2rem 0; padding:1.5rem; background:rgba(255,0,0,0.1); border-radius:8px;">
+                <div style="margin: 2rem 0 0; padding:1.5rem; background:rgba(255,0,0,0.1); border-radius:8px;">
                     <p style="margin-bottom: 1rem; color: #ff6b6b; font-size:0.9rem;">
                         ※システム設定。全データを初期化し、所持金と進行状況をリセットします。</p>
                     <button id="reset-data-btn" class="btn"
                         style="background:#ff4444; color:white; padding:1rem; width:100%;">データ初期化（はじめから）</button>
                 </div>
-
-                <button id="back-to-menu-btn" class="btn"
-                    style="display:block; width:100%; padding: 1rem; font-size:1rem; background:var(--bg-color); color:var(--text-primary); border:1px solid #555;">◀
-                    メニューに戻る</button>
             </div>
         </section>
 
@@ -116,10 +118,12 @@
                     <button class="btn bank-repay-btn" data-amount="max">全額</button>
                 </div>
                 <p id="bank-message" style="min-height:1.5em; margin-top:1rem; font-size:0.85rem; color:var(--accent-gold); text-align:center;"></p>
-                <button id="bank-back-btn" class="btn"
-                    style="display:block; width:100%; padding: 1rem; margin-top:0.5rem; background:var(--bg-color); color:var(--text-primary); border:1px solid #555;">◀
-                    メニューに戻る</button>
             </div>
+        </section>
+
+        <!-- 画面T: 成績 -->
+        <section id="stats-screen" class="screen scroll-screen">
+            <div id="stats-content"></div>
         </section>
 
         <!-- 画面1: 厩務 (資金稼ぎ) -->
@@ -135,35 +139,48 @@
             </div>
         </section>
 
-        <!-- 画面2: パドック (レース選択) -->
-        <section id="paddock-screen" class="screen">
+        <!-- 画面2: パドック (出馬表) -->
+        <section id="paddock-screen" class="screen scroll-screen">
             <div class="glass-card">
                 <h2 id="race-title-display">出馬表</h2>
-                <p style="font-size:0.85rem;">SP(スピード)は巡航速度、ST(スタミナ)が距離に対して足りないと終盤に失速、GT(根性)は失速を抑え、ゴール前の競り合いで伸びます。芝・ダートの適性や調子(矢印)もチェックしましょう。</p>
+                <details class="help-box">
+                    <summary>能力の見方</summary>
+                    <ul>
+                        <li><b>SP（スピード）</b>: ふだんの走る速さ</li>
+                        <li><b>ST（スタミナ）</b>: 距離に対して足りないと、終盤に失速します</li>
+                        <li><b>GT（根性）</b>: 失速を抑え、ゴール前の競り合いで伸びます</li>
+                        <li><b>芝・ダ</b>: 得意なコース。レースと違うと少し遅くなります</li>
+                        <li><b>逃・先・差・追</b>: 脚質（逃げ・先行・差し・追込）</li>
+                        <li><b>矢印</b>: 前回からの調子の変化</li>
+                    </ul>
+                    <p>馬をタップすると、くわしい情報が見られます。</p>
+                </details>
             </div>
-            <div class="horse-list glass-card" id="horse-entry-list">
-                <!-- 馬のリストがJSで挿入される -->
+            <div class="glass-card">
+                <div class="list-head">
+                    <span>出走馬</span>
+                    <div class="seg" id="paddock-sort"></div>
+                </div>
+                <div class="horse-list" id="horse-entry-list">
+                    <!-- 馬のリストがJSで挿入される -->
+                </div>
             </div>
-            <div style="text-align: center;">
-                <button id="go-betting-btn" class="btn btn-primary">馬券購入へ</button>
+            <div id="race-history-card" class="glass-card">
+                <h3>過去5レースの結果</h3>
+                <div id="race-history-list" style="font-size: 0.85rem; color: #ccc;"></div>
+            </div>
+            <div class="bottom-bar">
+                <button id="go-betting-btn" class="btn btn-primary">馬券を買う ▶</button>
             </div>
         </section>
 
         <!-- 画面3: 馬券購入 -->
-        <section id="betting-screen" class="screen">
-            <div class="glass-card">
-                <h2>馬券購入</h2>
-                <div id="bet-tabs">
-                    <!-- Javascript will populate this based on TABS_DEF -->
-                </div>
-            </div>
+        <section id="betting-screen" class="screen scroll-screen">
             <div id="betting-interface" class="glass-card">
                 <!-- オッズと入力フォーム -->
             </div>
-            <div style="text-align: center; gap: 1rem; display: flex; justify-content: center;">
-                <button id="back-paddock-btn" class="btn">戻る</button>
-                <button id="start-race-btn" class="btn btn-primary">レース開始！</button>
-            </div>
+            <div id="bet-slip" class="glass-card"></div>
+            <div class="bottom-bar" id="bet-bar"></div>
         </section>
 
         <!-- 画面4: レース実況 -->
@@ -177,13 +194,30 @@
         </section>
 
         <!-- 画面5: リザルト -->
-        <section id="result-screen" class="screen">
-            <div class="glass-card" style="text-align: center;">
-                <h1 id="winner-announce">優勝: 馬名</h1>
-                <div id="payout-details" style="margin: 2rem 0; font-size: 1.5rem;">
-                    払戻金: <span class="coin-icon">💰</span><span id="payout-amount">0</span>
+        <section id="result-screen" class="screen scroll-screen">
+            <div class="glass-card result-head" id="result-head">
+                <div id="result-banner" class="result-banner"></div>
+                <div id="winner-announce" class="winner-announce"></div>
+                <div id="payout-details" class="payout-details">
+                    払戻金 <span class="coin-icon">💰</span><span id="payout-amount">0</span>
                 </div>
-                <button id="next-race-btn" class="btn btn-primary">次のレースへ</button>
+                <div id="result-pl" class="result-pl"></div>
+                <div id="result-fx" class="result-fx"></div>
+            </div>
+            <div class="glass-card">
+                <h3 class="card-title">あなたの馬券</h3>
+                <div id="result-bets"></div>
+            </div>
+            <div class="glass-card">
+                <h3 class="card-title">着順</h3>
+                <div id="result-order"></div>
+            </div>
+            <div class="glass-card">
+                <h3 class="card-title">通算成績</h3>
+                <div id="result-stats"></div>
+            </div>
+            <div class="bottom-bar">
+                <button id="next-race-btn" class="btn btn-primary">次のレースへ ▶</button>
             </div>
         </section>
     </main>
@@ -255,7 +289,7 @@
 
         // --- Version ---
         // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
-        const APP_VERSION = '1.8.0';
+        const APP_VERSION = '1.9.0';
 
         // --- Application State ---
         let state = {
@@ -267,7 +301,9 @@
             recentPlacements: {}, // 馬ごとの近走成績 { horseId: [1, 2, 5...] }
             raceSpeed: 1.0,
             debt: 0,
-            goalsReached: [] // [{ amount, race }]
+            goalsReached: [], // [{ amount, race }]
+            lastBets: [], // 前回買った馬券（「前回と同じ」用）
+            stats: null   // 通算成績（loadGame で用意する）
         };
 
         // 段階的な目標（純資産 = 所持金 − 借金 で判定）
@@ -294,7 +330,12 @@
         let raceInProgress = false; // レース演出中は画面遷移をロック
 
         let deferredPrompt;
-        const betSelections = { sortMode: 'number', h1: null, h2: null, amounts: {} };
+        const betSelections = { sortMode: 'number', h1: null, h2: null, amounts: {}, chip: 10 };
+        let paddockSort = 'number';
+
+        // 枠の色（ゼッケン・番号の丸）と、その上の文字色
+        const GATE_COLORS = ['#f5f5f5', '#222222', '#d83030', '#2f62d8', '#f0c419', '#2e9e46', '#f28a1e', '#f37ab7'];
+        const GATE_TEXT = ['#000', '#fff', '#fff', '#fff', '#000', '#fff', '#000', '#000'];
 
         // --- Dom Elements ---
         const screens = document.querySelectorAll('.screen');
@@ -307,21 +348,23 @@
         // --- Initialization ---
         function init() {
             console.log("UmaGame - Game Init", APP_VERSION);
-            loadHorseImage();
+            // 絵の読み込みが終わったら、馬の絵が入る画面を描き直す
+            loadHorseImage().then(() => {
+                if (state.currentRace && state.currentRace.entries) renderPaddock();
+            });
             document.getElementById('version-display').textContent = `UmaGame v${APP_VERSION}`;
             loadGame();
             updateUI();
             spawnDirtLoop();
 
             document.getElementById('go-betting-btn').addEventListener('click', () => switchScreen('betting-screen'));
-            document.getElementById('back-paddock-btn').addEventListener('click', () => switchScreen('paddock-screen'));
-            document.getElementById('start-race-btn').addEventListener('click', startRace);
+            document.getElementById('header-back-btn').addEventListener('click', goBack);
+            document.getElementById('menu-stats-btn').addEventListener('click', () => switchScreen('stats-screen'));
 
             document.getElementById('menu-race-btn').addEventListener('click', () => switchScreen('paddock-screen'));
             document.getElementById('menu-stable-btn').addEventListener('click', () => switchScreen('stable-screen'));
             document.getElementById('menu-settings-btn').addEventListener('click', () => switchScreen('settings-screen'));
             document.getElementById('menu-bank-btn').addEventListener('click', () => switchScreen('bank-screen'));
-            document.getElementById('bank-back-btn').addEventListener('click', () => switchScreen('main-menu-screen'));
             document.querySelectorAll('.bank-borrow-btn').forEach(b => b.addEventListener('click', () => borrow(b.dataset.amount)));
             document.querySelectorAll('.bank-repay-btn').forEach(b => b.addEventListener('click', () => repay(b.dataset.amount)));
             document.getElementById('modal-close-btn').addEventListener('click', closeModal);
@@ -330,9 +373,6 @@
             document.getElementById('speed-10-btn').addEventListener('click', () => setRaceSpeed(1.0));
             document.getElementById('speed-20-btn').addEventListener('click', () => setRaceSpeed(2.0));
 
-            document.getElementById('back-to-menu-btn').addEventListener('click', () => {
-                switchScreen('main-menu-screen');
-            });
             document.getElementById('reset-data-btn').addEventListener('click', () => {
                 if (confirm("本当に全てのデータを消去し、最初からやり直しますか？")) {
                     localStorage.removeItem('horse-racing-save');
@@ -403,14 +443,42 @@
         }
 
         // --- Screen Management ---
+        // 戻るボタン（ヘッダー左上）で戻る先
+        const SCREEN_PARENT = {
+            'settings-screen': 'main-menu-screen', 'bank-screen': 'main-menu-screen', 'stats-screen': 'main-menu-screen',
+            'stable-screen': 'main-menu-screen', 'paddock-screen': 'main-menu-screen',
+            'betting-screen': 'paddock-screen', 'result-screen': 'paddock-screen'
+        };
+        // 画面の深さ（深い方へ進むときは右から、浅い方へ戻るときは左から出てくる）
+        const SCREEN_DEPTH = {
+            'main-menu-screen': 0, 'settings-screen': 1, 'bank-screen': 1, 'stats-screen': 1, 'stable-screen': 1,
+            'paddock-screen': 1, 'betting-screen': 2, 'race-screen': 3, 'result-screen': 4
+        };
+        let currentScreen = 'main-menu-screen';
+
         function switchScreen(screenId) {
             // レース中は結果画面以外へ移動させない
             if (raceInProgress && screenId !== 'race-screen' && screenId !== 'result-screen') return;
-            screens.forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+            const el = document.getElementById(screenId);
+            if (screenId !== currentScreen) {
+                const forward = (SCREEN_DEPTH[screenId] || 0) >= (SCREEN_DEPTH[currentScreen] || 0);
+                screens.forEach(s => s.classList.remove('active', 'enter-forward', 'enter-back'));
+                el.classList.add('active');
+                void el.offsetWidth; // アニメーションを最初から再生させる
+                el.classList.add(forward ? 'enter-forward' : 'enter-back');
+                document.getElementById('game-container').scrollTop = 0;
+            }
+            currentScreen = screenId;
+            document.getElementById('header-back-btn').classList.toggle('show', !!SCREEN_PARENT[screenId]);
             if (screenId === 'bank-screen') renderBank();
             if (screenId === 'stable-screen') renderStableInfo();
             if (screenId === 'main-menu-screen') renderGoalRecord();
+            if (screenId === 'stats-screen') renderStats();
+        }
+
+        function goBack() {
+            const parent = SCREEN_PARENT[currentScreen];
+            if (parent) switchScreen(parent);
         }
 
         // --- Labor (Stable) Logic ---
@@ -792,80 +860,172 @@
             return finishedCount;
         }
 
+        // --- 表示の共通部品 ---
+        function gateBadge(no) {
+            return `<span class="gate-badge" style="background:${GATE_COLORS[no - 1]};color:${GATE_TEXT[no - 1]};">${no}</span>`;
+        }
+
+        function escapeHtml(t) {
+            return String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // 単勝オッズの低い順に 1番人気, 2番人気…
+        function popularityOf(race) {
+            const pop = {};
+            if (!race || !race.odds || !race.odds.win) return pop;
+            Object.keys(race.odds.win)
+                .sort((a, b) => parseFloat(race.odds.win[a]) - parseFloat(race.odds.win[b]) || a - b)
+                .forEach((no, i) => { pop[no] = i + 1; });
+            return pop;
+        }
+
+        function popBadge(rank) {
+            if (!rank) return '';
+            const cls = rank === 1 ? 'pop pop1' : rank === 2 ? 'pop pop2' : rank === 3 ? 'pop pop3' : 'pop';
+            return `<span class="${cls}">${rank}人気</span>`;
+        }
+
+        // 馬の絵の小さな画像（canvas）。絵がまだ読めていなければ null
+        function horseThumb(h, entryNo, cssW) {
+            const g = entryNo - 1;
+            const src = horseImage({ ...h, entryNo }, GATE_COLORS[g], GATE_TEXT[g]);
+            if (!src) return null;
+            const dpr = window.devicePixelRatio || 1;
+            const cssH = cssW * src.height / src.width;
+            const c = document.createElement('canvas');
+            c.width = Math.round(cssW * dpr);
+            c.height = Math.round(cssH * dpr);
+            c.style.width = `${cssW}px`;
+            c.style.height = `${cssH}px`;
+            c.className = 'horse-thumb';
+            c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+            return c;
+        }
+
+        // 能力値 → ランク（S〜E）
+        const GRADES = [[115, 'S', '#ff4500'], [100, 'A', '#ff1493'], [85, 'B', '#ff8c00'], [70, 'C', '#32cd32'], [55, 'D', '#1e90ff'], [0, 'E', '#808080']];
+        function gradeOf(val) {
+            return GRADES.find(g => val >= g[0]);
+        }
+
+        // 能力の棒グラフ（120 で満タン）
+        function statBar(label, val, showNum = false) {
+            const [, grade, color] = gradeOf(val);
+            const pct = Math.min(100, Math.round(val / 120 * 100));
+            return `<div class="stat">
+                <span class="stat-label">${label}</span>
+                <span class="stat-track"><span class="stat-fill" style="width:${pct}%; background:${color};"></span></span>
+                <span class="stat-grade" style="color:${color};">${grade}${showNum ? `<small> ${val}</small>` : ''}</span>
+            </div>`;
+        }
+
+        const TYPE_NAMES = { '逃': '逃げ', '先': '先行', '差': '差し', '追': '追込' };
+        const TYPE_DESC = {
+            '逃': '最初から先頭に立って逃げ切りをねらう',
+            '先': '前の方につけて、早めに抜け出す',
+            '差': '中団から、終盤の手前でスパートする',
+            '追': '後ろから、最後の直線で一気に追い込む'
+        };
+
+        // このレースの距離に対するスタミナの足り具合
+        function distanceFit(h, race) {
+            const need = Math.pow(race.distance / 2000, STAMINA_CURVE) * STAMINA_NEED;
+            const ratio = h.stamina / need;
+            if (ratio >= 1.25) return { mark: '◎', text: 'たっぷり余裕', color: 'var(--accent-emerald)' };
+            if (ratio >= 1.0) return { mark: '○', text: '足りている', color: '#9be29b' };
+            if (ratio >= 0.8) return { mark: '△', text: '少し足りない', color: '#f0c419' };
+            return { mark: '×', text: '足りない（終盤に失速しやすい）', color: '#ff6b6b' };
+        }
+
+        function placementsHtml(id) {
+            const placements = (state.recentPlacements && state.recentPlacements[id]) || [];
+            if (placements.length === 0) return '初出走';
+            return placements.map(p => p <= 3 ? `<span class="place-top">${p}着</span>` : `${p}着`).join(' - ');
+        }
+
+        // --- パドック（出馬表） ---
         function renderPaddock() {
+            const race = state.currentRace;
             const title = document.getElementById('race-title-display');
-            const elementLabel = state.currentRace.type.element === 'G' ? "芝" : "ダート";
-            if (title && state.currentRace.name) {
-                title.innerHTML = `${state.currentRace.name} <span style="font-size:1rem; color:var(--accent-gold);">(${elementLabel} ${state.currentRace.distance}m / ${state.currentRace.label})</span>`;
+            const elementLabel = race.type.element === 'G' ? "芝" : "ダート";
+            if (title && race.name) {
+                title.innerHTML = `${race.name} <span style="font-size:1rem; color:var(--accent-gold);">(${elementLabel} ${race.distance}m / ${race.label})</span>`;
             }
 
+            document.getElementById('paddock-sort').innerHTML = [['number', '番号順'], ['pop', '人気順']]
+                .map(([k, l]) => `<button class="${paddockSort === k ? 'on' : ''}" onclick="paddockSort='${k}'; renderPaddock();">${l}</button>`).join('');
+
+            const pop = popularityOf(race);
+            const order = race.entries.map((h, i) => ({ h, no: i + 1 }));
+            if (paddockSort === 'pop') order.sort((a, b) => (pop[a.no] || 99) - (pop[b.no] || 99));
+
             entryList.innerHTML = '';
-            state.currentRace.entries.forEach((horse, index) => {
+            order.forEach(({ h: horse, no }) => {
                 const item = document.createElement('div');
-                item.className = 'horse-item';
+                item.className = 'entry-card';
                 // 調子 4, 5 を UP、1, 2 を DOWN とする
                 const condClass = horse.condition >= 4 ? 'condition-up' : (horse.condition <= 2 ? 'condition-down' : '');
-
-                const placements = (state.recentPlacements && state.recentPlacements[horse.id]) ? state.recentPlacements[horse.id] : [];
-                const placeText = placements.length > 0
-                    ? placements.map(p => p <= 3 ? `<span style="color:var(--accent-gold); font-weight:bold;">${p}着</span>` : `${p}着`).join(' - ')
-                    : '初出走';
-
-                const getGrade = val => {
-                    if (val >= 115) return '<span style="color:#ff4500;font-weight:bold;">S</span>';
-                    if (val >= 100) return '<span style="color:#ff1493;font-weight:bold;">A</span>';
-                    if (val >= 85) return '<span style="color:#ff8c00;font-weight:bold;">B</span>';
-                    if (val >= 70) return '<span style="color:#32cd32;font-weight:bold;">C</span>';
-                    if (val >= 55) return '<span style="color:#1e90ff;font-weight:bold;">D</span>';
-                    return '<span style="color:#808080;font-weight:bold;">E</span>';
-                };
-
                 const aptHtml = horse.apt === 'G' ? '<span style="color:#7CFC00;">芝</span>' : '<span style="color:#DEB887;">ダ</span>';
-                const statsHtml = `[${aptHtml}/<span style="color:white">${horse.type}</span>] SP:${getGrade(horse.speed)} ST:${getGrade(horse.stamina)} GT:${getGrade(horse.guts)}`;
-
+                const fit = distanceFit(horse, race);
                 item.innerHTML = `
-            <div>${index + 1}</div>
-            <div>
-                <div style="font-weight:bold; font-size:1.0rem; margin-bottom:2px;">${horse.name}</div>
-                <div style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:1px;">${statsHtml}</div>
-                <div style="font-size:0.75rem; color:var(--text-secondary);">近走: ${placeText}</div>
-            </div>
-            <div class="${condClass}" style="text-align:center; font-size:1.2rem;">${horse.conditionTxt}</div>
-            <div id="odds-${horse.id}">${state.currentRace.odds ? state.currentRace.odds.win[index + 1] + 'x' : '--'}</div>
-        `;
+                    <div class="entry-left">${gateBadge(no)}<div class="thumb-slot"></div></div>
+                    <div class="entry-main">
+                        <div class="entry-name">${escapeHtml(horse.name)}</div>
+                        <div class="entry-tags">[${aptHtml}/${horse.type}] 距離<span style="color:${fit.color}; font-weight:bold;">${fit.mark}</span> ${popBadge(pop[no])}</div>
+                    </div>
+                    <div class="entry-right">
+                        <div class="entry-odds">${race.odds ? race.odds.win[no] : '--'}<small>倍</small></div>
+                        <div class="${condClass} entry-cond">調子 ${horse.conditionTxt}</div>
+                    </div>
+                    <div class="entry-stats">${statBar('SP', horse.speed)}${statBar('ST', horse.stamina)}${statBar('GT', horse.guts)}</div>
+                    <div class="entry-recent">近走: ${placementsHtml(horse.id)}</div>
+                `;
+                const thumb = horseThumb(horse, no, window.innerWidth <= 480 ? 52 : 64);
+                if (thumb) item.querySelector('.thumb-slot').appendChild(thumb);
+                item.addEventListener('click', () => showHorseDetail(no));
                 entryList.appendChild(item);
             });
 
-            // 履歴を表示
             renderHistory();
         }
 
-        function renderHistory() {
-            let historyEl = document.getElementById('race-history-list');
-            if (!historyEl) {
-                const container = document.createElement('div');
-                container.className = 'glass-card';
-                container.style.marginTop = '2rem';
-                container.innerHTML = `
-            <h3>過去5試合の結果</h3>
-            <div id="race-history-list" style="font-size: 0.85rem; color: #ccc;">
-            </div>
-        `;
-                entryList.parentElement.appendChild(container);
-                historyEl = document.getElementById('race-history-list');
-            }
+        // 馬をタップしたときの詳細
+        function showHorseDetail(no) {
+            const race = state.currentRace;
+            const h = race.entries[no - 1];
+            if (!h) return;
+            const pop = popularityOf(race);
+            const fit = distanceFit(h, race);
+            const surfaceOk = h.apt === race.type.element;
+            const cond = { 5: '絶好調', 4: '好調', 3: 'ふつう', 2: '不調', 1: '絶不調' }[h.condition] || 'ふつう';
+            showModal(`${no}番 ${h.name}`, `
+                <div class="detail-thumb"></div>
+                <div class="detail-grid">
+                    <div>単勝</div><div><b style="color:var(--accent-gold);">${race.odds.win[no]}倍</b> ${popBadge(pop[no])}</div>
+                    <div>複勝</div><div>${race.odds.place[no]}倍</div>
+                    <div>脚質</div><div>${TYPE_NAMES[h.type]}<br><small>${TYPE_DESC[h.type]}</small></div>
+                    <div>コース</div><div>${h.apt === 'G' ? '芝' : 'ダート'}が得意 ${surfaceOk ? '<span style="color:var(--accent-emerald);">（今回○）</span>' : '<span style="color:#ff6b6b;">（今回は苦手）</span>'}</div>
+                    <div>距離</div><div><span style="color:${fit.color}; font-weight:bold;">${fit.mark}</span> ${race.distance}m はスタミナが${fit.text}</div>
+                    <div>調子</div><div>${cond}（前回から ${h.conditionTxt}）</div>
+                    <div>近走</div><div>${placementsHtml(h.id)}</div>
+                </div>
+                <div class="detail-stats">${statBar('SP', h.speed, true)}${statBar('ST', h.stamina, true)}${statBar('GT', h.guts, true)}</div>
+            `);
+            const thumb = horseThumb(h, no, 240);
+            if (thumb) document.querySelector('#modal-body .detail-thumb').appendChild(thumb);
+        }
 
+        function renderHistory() {
+            const historyEl = document.getElementById('race-history-list');
             if (state.recentResults.length === 0) {
                 historyEl.innerHTML = '<p>まだレース履歴がありません。</p>';
                 return;
             }
-
             historyEl.innerHTML = state.recentResults.slice().reverse().map((res, i) => `
-        <div style="border-bottom: 1px solid #444; padding: 8px 0;">
-            <div style="color: var(--accent-gold); font-weight: bold;">[RACE ${state.recentResults.length - i}]</div>
-            1着: ${res.winner} / 2着: ${res.runnerUp} / 3着: ${res.third}
-        </div>
-    `).join('');
+                <div class="history-row">
+                    <div style="color: var(--accent-gold); font-weight: bold;">${i === 0 ? '前回' : `${i + 1}回前`}</div>
+                    1着 ${escapeHtml(res.winner)} / 2着 ${escapeHtml(res.runnerUp)} / 3着 ${escapeHtml(res.third)}
+                </div>`).join('');
         }
 
         // --- Odds (Parimutuel Simulation) ---
@@ -957,10 +1117,76 @@
         // --- Betting UI ---
         let currentBetTab = 'win';
 
+        const TABS_DEF = [
+            { id: 'win', label: '単勝', desc: '1着になる馬を当てる馬券です。', ease: 3, example: '5番を買う → 5番が1着なら的中' },
+            { id: 'place', label: '複勝', desc: '選んだ馬が3着以内に入れば的中の馬券です。', ease: 5, example: '5番を買う → 5番が1〜3着なら的中' },
+            { id: 'quinella', label: '馬連', desc: '1・2着になる2頭を順不同で当てる馬券です。', ease: 2, example: '3-5 を買う → 1着3番・2着5番でも、その逆でも的中' },
+            { id: 'exacta', label: '馬単', desc: '1・2着の馬を着順通りに当てる馬券です。', ease: 2, example: '3→5 を買う → 1着3番・2着5番のときだけ的中' },
+            { id: 'wide', label: 'ワイド', desc: '選んだ2頭が両方とも3着以内に入れば的中です。', ease: 4, example: '3-5 を買う → 3番と5番がどちらも3着以内なら的中' },
+            { id: 'trio', label: '3連複', desc: '1・2・3着の組み合わせを順不同で当てる馬券です。', ease: 1, example: '1-3-5 を買う → 上位3頭が1・3・5番なら順番は問わず的中' },
+            { id: 'trifecta', label: '3連単', desc: '1・2・3着の馬を着順通りに当てる馬券です。', ease: 1, example: '1→3→5 を買う → 1着1番・2着3番・3着5番のときだけ的中' }
+        ];
+        const BET_LABEL = Object.fromEntries(TABS_DEF.map(t => [t.id, t.label]));
+        const ORDERED_TYPES = ['exacta', 'trifecta'];
+        const CHIPS = [1, 10, 50, 100, 'all'];
+
+        function betTotal() {
+            return Object.values(betSelections.amounts).reduce((a, b) => a + b, 0);
+        }
+
+        function splitBetKey(key) {
+            const i = key.indexOf('_');
+            return [key.slice(0, i), key.slice(i + 1)];
+        }
+
+        // 馬番の組み合わせを、枠の色の丸で表示する
+        function comboHtml(type, id) {
+            const sep = ORDERED_TYPES.includes(type) ? '<span class="combo-sep">→</span>' : '<span class="combo-sep">-</span>';
+            return String(id).split('-').map(n => gateBadge(parseInt(n))).join(sep);
+        }
+
         function updateBetAmount(type, id, val) {
-            const amt = parseInt(val) || 0;
+            const amt = Math.max(0, parseInt(val) || 0);
             if (amt > 0) betSelections.amounts[type + '_' + id] = amt;
             else delete betSelections.amounts[type + '_' + id];
+            refreshBetSummary();
+        }
+
+        // ＋ボタン: 選んでいる額を足す（「残り全部」は今の残りのコインをすべて）
+        function addBetChip(type, id) {
+            const key = type + '_' + id;
+            const remain = state.coins - betTotal();
+            const add = betSelections.chip === 'all' ? remain : betSelections.chip;
+            if (add <= 0) { flashBetBar(); return; }
+            betSelections.amounts[key] = (betSelections.amounts[key] || 0) + add;
+            const input = document.querySelector(`.bet-input[data-key="${key}"]`);
+            if (input) input.value = betSelections.amounts[key];
+            refreshBetSummary();
+        }
+
+        function setBetChip(chip) {
+            betSelections.chip = chip;
+            document.querySelectorAll('#chip-select button').forEach(b => b.classList.toggle('on', String(chip) === b.dataset.chip));
+        }
+
+        function removeBet(key) {
+            delete betSelections.amounts[key];
+            renderBettingInterface();
+        }
+
+        function clearBets() {
+            betSelections.amounts = {};
+            renderBettingInterface();
+        }
+
+        // 前回と同じ馬券（馬番と金額が同じもの）を入れる
+        function repeatLastBets() {
+            const odds = state.currentRace.odds;
+            betSelections.amounts = {};
+            (state.lastBets || []).forEach(b => {
+                if (odds[b.type] && odds[b.type][b.id]) betSelections.amounts[b.type + '_' + b.id] = b.amount;
+            });
+            renderBettingInterface();
         }
 
         function setBettingSort(mode) {
@@ -980,181 +1206,178 @@
         }
 
         function getHorseBtnHtml(level, activeNum, excludeNum) {
-            let html = '<div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">';
+            let html = '<div class="pick-row">';
             for (let i = 1; i <= 8; i++) {
                 if (i === excludeNum) continue;
-                const isActive = (i === activeNum);
-                const bg = isActive ? 'var(--accent-gold)' : '#222';
-                const col = isActive ? '#000' : '#fff';
-                const border = isActive ? 'border-color:var(--accent-gold);' : '';
-                html += `<button class="btn" style="width:40px; height:40px; border-radius:50%; padding:0; background:${bg}; color:${col}; ${border}" onclick="selectBetHorse(${level}, ${i})">${i}</button>`;
+                html += `<button class="pick-btn ${i === activeNum ? 'on' : ''}" style="--gate:${GATE_COLORS[i - 1]}; --gate-text:${GATE_TEXT[i - 1]};" onclick="selectBetHorse(${level}, ${i})">${i}</button>`;
             }
-            html += '</div>';
-            return html;
+            return html + '</div>';
         }
 
-        const TABS_DEF = [
-            { id: 'win', label: '単勝', desc: '1着になる馬を当てる馬券です。' },
-            { id: 'place', label: '複勝', desc: '選んだ馬が3着以内に入れば的中の馬券です。' },
-            { id: 'quinella', label: '馬連', desc: '1・2着になる2頭を順不同で当てる馬券です。' },
-            { id: 'exacta', label: '馬単', desc: '1・2着の馬を着順通りに当てる馬券です。' },
-            { id: 'wide', label: 'ワイド', desc: '選んだ2頭が両方とも3着以内に入れば的中です。' },
-            { id: 'trio', label: '3連複', desc: '1・2・3着の組み合わせを順不同で当てる馬券です。' },
-            { id: 'trifecta', label: '3連単', desc: '1・2・3着の馬を着順通りに当てる馬券です。' }
-        ];
+        function showBetHelp() {
+            const stars = n => '★'.repeat(n) + '<span style="color:#555;">' + '★'.repeat(5 - n) + '</span>';
+            showModal('馬券の種類', `<div class="help-list">${TABS_DEF.map(t => `
+                <div class="help-item">
+                    <div><b>${t.label}</b> <span class="help-stars">当たりやすさ ${stars(t.ease)}</span></div>
+                    <div>${t.desc}</div>
+                    <div class="help-ex">例: ${t.example}</div>
+                </div>`).join('')}
+                <p style="font-size:0.8rem; color:#aaa; margin-top:8px;">当たりにくい馬券ほど、オッズ（払戻の倍率）が高くなります。払戻金 = 賭けたコイン × オッズ です。</p>
+            </div>`);
+        }
 
         function renderBettingInterface() {
             const ui = document.getElementById('betting-interface');
-            ui.innerHTML = '';
-
-            const tabs = document.createElement('div');
-            tabs.style.display = 'flex';
-            tabs.style.flexWrap = 'wrap';
-            tabs.style.gap = '5px';
-            tabs.style.marginBottom = '10px';
-            TABS_DEF.forEach(t => {
-                const btn = document.createElement('button');
-                btn.className = `btn ${currentBetTab === t.id ? 'active' : ''}`;
-                btn.innerText = t.label;
-                btn.style.padding = '0.5rem';
-                btn.style.fontSize = '0.85rem';
-                btn.onclick = () => {
-                    currentBetTab = t.id;
-                    betSelections.h1 = null;
-                    betSelections.h2 = null;
-                    renderBettingInterface();
-                };
-                tabs.appendChild(btn);
-            });
-            ui.appendChild(tabs);
-
+            const race = state.currentRace;
+            if (!race.odds.exacta) calculateOdds();
+            const pop = popularityOf(race);
             const activeDef = TABS_DEF.find(t => t.id === currentBetTab);
-            const desc = document.createElement('div');
-            desc.style.fontSize = '0.85rem';
-            desc.style.color = '#ccc';
-            desc.style.marginBottom = '10px';
-            desc.style.backgroundColor = 'rgba(0,0,0,0.2)';
-            desc.style.padding = '8px';
-            desc.style.borderRadius = '4px';
-            desc.innerText = `💡 ${activeDef.desc}`;
-            ui.appendChild(desc);
-
             const isSingle = (currentBetTab === 'win' || currentBetTab === 'place');
             const isDouble = (currentBetTab === 'quinella' || currentBetTab === 'exacta' || currentBetTab === 'wide');
             const isTriple = (currentBetTab === 'trio' || currentBetTab === 'trifecta');
 
-            const filtersContainer = document.createElement('div');
-            let filterHtml = `
-                <div style="margin-bottom:15px; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: ${isSingle ? '0' : '12px'};">
-                        <span style="font-size:0.9rem; color:#aaa;">並び順:</span>
-                        <div>
-                            <button class="btn" style="padding:4px 10px; font-size:0.8rem; ${betSelections.sortMode === 'number' ? 'background:var(--accent-gold); color:#000;' : ''}" onclick="setBettingSort('number')">番号順</button>
-                            <button class="btn" style="padding:4px 10px; font-size:0.8rem; ${betSelections.sortMode === 'odds' ? 'background:var(--accent-gold); color:#000;' : ''}" onclick="setBettingSort('odds')">オッズ順</button>
-                        </div>
+            let html = `
+                <div class="bet-tabs">
+                    ${TABS_DEF.map(t => `<button class="bet-tab ${currentBetTab === t.id ? 'on' : ''}" onclick="currentBetTab='${t.id}'; betSelections.h1=null; betSelections.h2=null; renderBettingInterface();">${t.label}</button>`).join('')}
+                    <button class="bet-tab help-btn" onclick="showBetHelp()" aria-label="馬券の種類の説明">？</button>
+                </div>
+                <div class="bet-desc">💡 ${activeDef.desc}</div>
+                <div class="bet-tools">
+                    <div class="tool-row">
+                        <span class="tool-label">＋で足す額</span>
+                        <div class="seg" id="chip-select">${CHIPS.map(c => `<button data-chip="${c}" class="${String(betSelections.chip) === String(c) ? 'on' : ''}" onclick="setBetChip(${c === 'all' ? "'all'" : c})">${c === 'all' ? '残り全部' : c}</button>`).join('')}</div>
                     </div>
-            `;
-
+                    <div class="tool-row">
+                        <span class="tool-label">並び順</span>
+                        <div class="seg">
+                            <button class="${betSelections.sortMode === 'number' ? 'on' : ''}" onclick="setBettingSort('number')">番号順</button>
+                            <button class="${betSelections.sortMode === 'odds' ? 'on' : ''}" onclick="setBettingSort('odds')">人気順</button>
+                        </div>
+                    </div>`;
             if (isDouble || isTriple) {
-                filterHtml += `
-                    <div style="margin-bottom:10px;">
-                        <div style="font-size:0.8rem; margin-bottom:5px; color:#aaa; text-align:center;">
-                            ${currentBetTab === 'exacta' ? '1着にする馬を選択:' : '1頭目を選択:'}
-                        </div>
-                        ${getHorseBtnHtml(1, betSelections.h1, null)}
-                    </div>
-                `;
+                html += `<div class="pick-label">${currentBetTab === 'exacta' || currentBetTab === 'trifecta' ? '1着にする馬' : '1頭目'}</div>
+                    ${getHorseBtnHtml(1, betSelections.h1, null)}`;
             }
-
             if (isTriple && betSelections.h1) {
-                filterHtml += `
-                    <div>
-                        <div style="font-size:0.8rem; margin-bottom:5px; color:#aaa; text-align:center;">
-                            ${currentBetTab === 'trifecta' ? '2着にする馬を選択:' : '2頭目を選択:'}
-                        </div>
-                        ${getHorseBtnHtml(2, betSelections.h2, betSelections.h1)}
-                    </div>
-                `;
+                html += `<div class="pick-label">${currentBetTab === 'trifecta' ? '2着にする馬' : '2頭目'}</div>
+                    ${getHorseBtnHtml(2, betSelections.h2, betSelections.h1)}`;
             }
+            html += `</div>`;
 
-            filterHtml += `</div>`;
-            filtersContainer.innerHTML = filterHtml;
-            ui.appendChild(filtersContainer);
-
-            if (!state.currentRace.odds.exacta) calculateOdds();
-
-            const oddsDict = state.currentRace.odds[currentBetTab];
-            const combinations = [];
-
+            const oddsDict = race.odds[currentBetTab];
             let showList = true;
             if (isDouble && !betSelections.h1) showList = false;
             if (isTriple && (!betSelections.h1 || !betSelections.h2)) showList = false;
 
-            if (showList) {
-                for (let key in oddsDict) {
-                    let parts = key.split('-').map(Number);
+            if (!showList) {
+                html += `<div class="bet-empty">上のボタンで馬を選ぶと、組み合わせとオッズが出ます。</div>`;
+            } else {
+                const combinations = [];
+                for (const key in oddsDict) {
+                    const parts = key.split('-').map(Number);
                     let match = true;
                     if (isDouble) {
-                        if (currentBetTab === 'exacta') {
-                            if (parts[0] !== betSelections.h1) match = false;
-                        } else {
-                            if (!parts.includes(betSelections.h1)) match = false;
-                        }
+                        match = currentBetTab === 'exacta' ? parts[0] === betSelections.h1 : parts.includes(betSelections.h1);
                     } else if (isTriple) {
-                        if (currentBetTab === 'trifecta') {
-                            if (parts[0] !== betSelections.h1 || parts[1] !== betSelections.h2) match = false;
-                        } else {
-                            if (!parts.includes(betSelections.h1) || !parts.includes(betSelections.h2)) match = false;
-                        }
+                        match = currentBetTab === 'trifecta'
+                            ? (parts[0] === betSelections.h1 && parts[1] === betSelections.h2)
+                            : (parts.includes(betSelections.h1) && parts.includes(betSelections.h2));
                     }
                     if (match) combinations.push({ key, odds: parseFloat(oddsDict[key]), parts });
                 }
-
                 combinations.sort((a, b) => {
-                    if (betSelections.sortMode === 'odds') {
-                        return a.odds - b.odds;
-                    } else {
-                        for (let i = 0; i < a.parts.length; i++) {
-                            if (a.parts[i] !== b.parts[i]) return a.parts[i] - b.parts[i];
-                        }
-                        return 0;
-                    }
+                    if (betSelections.sortMode === 'odds') return a.odds - b.odds;
+                    for (let i = 0; i < a.parts.length; i++) if (a.parts[i] !== b.parts[i]) return a.parts[i] - b.parts[i];
+                    return 0;
                 });
 
-                const list = document.createElement('div');
-                list.className = 'horse-list';
-
-                combinations.forEach(c => {
-                    const div = document.createElement('div');
-                    div.className = 'horse-item';
-
-                    let nameHtml = "";
-                    if (currentBetTab === 'win' || currentBetTab === 'place') {
-                        const h = state.currentRace.entries[parseInt(c.key) - 1];
-                        nameHtml = `<div>${c.key}</div> <div style="font-weight:bold;">${h ? h.name : ''}</div>`;
-                        div.style.gridTemplateColumns = '30px 1fr 60px 80px';
+                html += '<div class="bet-list">' + combinations.map(c => {
+                    const key = currentBetTab + '_' + c.key;
+                    const amt = betSelections.amounts[key] || '';
+                    let label;
+                    if (isSingle) {
+                        const h = race.entries[parseInt(c.key) - 1];
+                        label = `${gateBadge(parseInt(c.key))}<span class="bet-name">${h ? escapeHtml(h.name) : ''}</span>${popBadge(pop[c.key])}`;
                     } else {
-                        let joinText = (currentBetTab === 'exacta' || currentBetTab === 'trifecta') ? ' <span style="color:#666">→</span> ' : ' <span style="color:#666">-</span> ';
-                        let parts = c.key.split('-');
-                        const formatted = parts.map(n => `<span style="display:inline-block; width:18px; text-align:center; background:#444; border-radius:3px; padding:2px;">${n}</span>`).join(joinText);
-                        nameHtml = `<div style="grid-column: span 2;">${formatted}</div>`;
-                        div.style.gridTemplateColumns = '1fr 60px 80px';
+                        label = comboHtml(currentBetTab, c.key);
                     }
-
-                    div.innerHTML = `
-                        ${nameHtml}
-                        <div style="color:var(--accent-gold); text-align:right;">${c.odds.toFixed(1)}x</div>
-                        <input type="number" min="0" placeholder="0" class="bet-input" data-type="${currentBetTab}" data-id="${c.key}" 
-                            value="${betSelections.amounts[currentBetTab + '_' + c.key] || ''}"
-                            oninput="updateBetAmount('${currentBetTab}', '${c.key}', this.value)"
-                            style="width:100%; padding:6px; background:#333; color:white; border:1px solid #555; text-align:right; border-radius:4px;">
-                    `;
-                    list.appendChild(div);
-                });
-                ui.appendChild(list);
+                    return `<div class="bet-row ${amt ? 'has-bet' : ''}" data-key="${key}">
+                        <div class="bet-combo">${label}</div>
+                        <div class="bet-odds">${c.odds.toFixed(1)}<small>倍</small><div class="bet-est"></div></div>
+                        <input type="number" min="0" inputmode="numeric" placeholder="0" class="bet-input" data-key="${key}"
+                            value="${amt}" oninput="updateBetAmount('${currentBetTab}', '${c.key}', this.value)">
+                        <button class="bet-plus" onclick="addBetChip('${currentBetTab}', '${c.key}')" aria-label="足す">＋</button>
+                    </div>`;
+                }).join('') + '</div>';
             }
+            ui.innerHTML = html;
+            refreshBetSummary();
         }
 
+        // 合計・買う馬券の一覧・払戻の目安を、入力のたびに更新する
+        function refreshBetSummary() {
+            const race = state.currentRace;
+            if (!race || !race.odds || !race.odds.win) return;
+            const odds = race.odds;
+            const total = betTotal();
+            const remain = state.coins - total;
+
+            document.querySelectorAll('#betting-interface .bet-row').forEach(row => {
+                const [type, id] = splitBetKey(row.dataset.key);
+                const amt = betSelections.amounts[row.dataset.key] || 0;
+                row.classList.toggle('has-bet', amt > 0);
+                row.querySelector('.bet-est').textContent = amt > 0 ? `→ ${Math.floor(amt * parseFloat(odds[type][id])).toLocaleString()}` : '';
+            });
+
+            // 買う馬券の一覧
+            const keys = Object.keys(betSelections.amounts);
+            const slip = document.getElementById('bet-slip');
+            const canRepeat = (state.lastBets || []).length > 0;
+            let html = `<div class="slip-head">
+                    <h3>買う馬券 <span class="slip-count">${keys.length}件</span></h3>
+                    <div class="slip-actions">
+                        ${canRepeat ? '<button class="mini-btn" onclick="repeatLastBets()">前回と同じ</button>' : ''}
+                        ${keys.length ? '<button class="mini-btn danger" onclick="clearBets()">すべて消す</button>' : ''}
+                    </div>
+                </div>`;
+            if (keys.length === 0) {
+                html += `<div class="bet-empty">まだ選んでいません。オッズの横の ＋ を押すか、金額を入れてください。</div>`;
+            } else {
+                html += keys.map(key => {
+                    const [type, id] = splitBetKey(key);
+                    const amt = betSelections.amounts[key];
+                    const o = parseFloat(odds[type][id]);
+                    return `<div class="slip-line">
+                        <span class="slip-type">${BET_LABEL[type]}</span>
+                        <span class="slip-combo">${comboHtml(type, id)}</span>
+                        <span class="slip-amt">${amt.toLocaleString()}<small> × ${o.toFixed(1)}</small></span>
+                        <span class="slip-est">当たれば ${Math.floor(amt * o).toLocaleString()}</span>
+                        <button class="slip-del" onclick="removeBet('${key}')" aria-label="消す">✕</button>
+                    </div>`;
+                }).join('');
+            }
+            slip.innerHTML = html;
+
+            // 画面下の合計とレース開始ボタン
+            const over = total > state.coins;
+            const maxPay = keys.reduce((m, key) => {
+                const [type, id] = splitBetKey(key);
+                return Math.max(m, Math.floor(betSelections.amounts[key] * parseFloat(odds[type][id])));
+            }, 0);
+            document.getElementById('bet-bar').innerHTML = `
+                <div class="bar-info ${over ? 'over' : ''}">
+                    <div>合計 <b>${total.toLocaleString()}</b> コイン</div>
+                    <div class="bar-sub">${over ? `コインが ${(-remain).toLocaleString()} 足りません` : `残り ${remain.toLocaleString()}${maxPay ? ` / 最大の払戻 ${maxPay.toLocaleString()}` : ''}`}</div>
+                </div>
+                <button id="start-race-btn" class="btn btn-primary" ${over ? 'disabled' : ''} onclick="startRace()">${total > 0 ? 'レース開始！' : '賭けずに見る'}</button>`;
+        }
+
+        function flashBetBar() {
+            const bar = document.getElementById('bet-bar');
+            bar.classList.remove('flash');
+            void bar.offsetWidth;
+            bar.classList.add('flash');
+        }
 
         // Override switchScreen for betting
         const originalSwitchScreen = switchScreen;
@@ -1171,23 +1394,23 @@
             let totalBet = 0;
             const bets = [];
 
-            for (let key in betSelections.amounts) {
+            for (const key in betSelections.amounts) {
                 const amt = parseInt(betSelections.amounts[key]) || 0;
                 if (amt > 0) {
                     totalBet += amt;
-                    const parts = key.split('_'); // [type, id] like ['exacta', '1-2']
-                    bets.push({ type: parts[0], id: parts[1], amount: amt });
+                    const [type, id] = splitBetKey(key); // ['exacta', '1-2'] など
+                    bets.push({ type, id, amount: amt });
                 }
             }
 
             if (totalBet > state.coins) {
-                alert("コインが足りません！");
+                flashBetBar();
+                showModal('コインが足りません', `<p>合計 ${totalBet.toLocaleString()} コインに対して、所持金は ${state.coins.toLocaleString()} コインです。</p>`);
                 return;
             }
 
-            if (totalBet > 0) {
-                state.coins -= totalBet;
-            }
+            state.coins -= totalBet;
+            if (bets.length > 0) state.lastBets = bets.map(b => ({ ...b }));
 
             // 賭けとレース中の状態を先に保存（途中でリロードされても同じレースを決着させる）
             state.bets = bets;
@@ -1433,9 +1656,7 @@
             }
 
             // --- 描画（横スクロール: 1頭1レーン、全頭が左から右へ走る） ---
-            // 枠の色（ゼッケン）
-            const GATE_COLORS = ['#f5f5f5', '#222222', '#d83030', '#2f62d8', '#f0c419', '#2e9e46', '#f28a1e', '#f37ab7'];
-            const GATE_TEXT = ['#000', '#fff', '#fff', '#fff', '#000', '#fff', '#000', '#000'];
+            // 枠の色（ゼッケン）は GATE_COLORS / GATE_TEXT（上の方で定義）
             // 毛色（馬ごとに固定）
             // [体の色, たてがみ・しっぽの色]（栗毛・鹿毛・白毛・青鹿毛・月毛・芦毛）
             const COATS = [['#c98a5a', '#6b3f22'], ['#8b5a3c', '#3a2418'], ['#f2ebe1', '#b9aea0'], ['#5b4636', '#2a1d14'], ['#e3bf8a', '#fff3d6'], ['#b3b3bd', '#6d6d78']];
@@ -2030,18 +2251,38 @@
             raceId = requestAnimationFrame(animate);
         }
 
+        // 1枚の馬券が当たったかどうか
+        function judgeBet(bet, w1, w2, w3, odds) {
+            const id = bet.id;
+            const asc = a => a.slice().sort((x, y) => x - y).join('-');
+            let hit = false;
+            switch (bet.type) {
+                case 'win': hit = parseInt(id) === w1; break;
+                case 'place': hit = [w1, w2, w3].includes(parseInt(id)); break;
+                case 'exacta': hit = id === `${w1}-${w2}`; break;
+                case 'quinella': hit = id === asc([w1, w2]); break;
+                case 'wide': hit = [asc([w1, w2]), asc([w1, w3]), asc([w2, w3])].includes(id); break;
+                case 'trifecta': hit = id === `${w1}-${w2}-${w3}`; break;
+                case 'trio': hit = id === asc([w1, w2, w3]); break;
+            }
+            const o = parseFloat(odds[bet.type][id]) || 0;
+            return { ...bet, hit, odds: o, payout: hit ? Math.floor(bet.amount * o) : 0 };
+        }
+
+        function emptyStats() {
+            return { races: 0, betRaces: 0, hitRaces: 0, tickets: 0, hits: 0, betSum: 0, paySum: 0, bestPay: null, maxOdds: null, byType: {}, since: APP_VERSION };
+        }
+
         function showResult(sortedEntries) {
             raceInProgress = false;
+            const race = state.currentRace;
+            const pop = popularityOf(race);
             const winner = sortedEntries[0];
             const second = sortedEntries[1];
-            document.getElementById('winner-announce').innerText = `1着: ${winner.name}\n2着: ${second.name}`;
+            const third = sortedEntries[2];
 
             // 履歴に追加 (上位3着)
-            state.recentResults.push({
-                winner: winner.name,
-                runnerUp: second.name,
-                third: sortedEntries[2].name
-            });
+            state.recentResults.push({ winner: winner.name, runnerUp: second.name, third: third.name });
             if (state.recentResults.length > 5) state.recentResults.shift();
 
             // 各馬の近走成績を記録
@@ -2052,60 +2293,79 @@
                 if (state.recentPlacements[h.id].length > 5) state.recentPlacements[h.id].pop();
             });
 
-            let totalPayout = 0;
-            const w1 = winner.entryNo;
-            const w2 = second.entryNo;
-            const w3 = sortedEntries[2].entryNo;
+            // 払い戻し
+            const results = state.bets.map(bet => judgeBet(bet, winner.entryNo, second.entryNo, third.entryNo, race.odds));
+            const totalPayout = results.reduce((a, r) => a + r.payout, 0);
+            const betSum = results.reduce((a, r) => a + r.amount, 0);
+            const raceNo = (state.raceCount || 0) + 1;
 
-            state.bets.forEach(bet => {
-                const id = bet.id;
-                const amt = bet.amount;
-                let isWin = false;
-                let odds = 0;
-
-                if (bet.type === 'win' && parseInt(id) === w1) {
-                    isWin = true; odds = state.currentRace.odds.win[id];
-                }
-                else if (bet.type === 'place' && [w1, w2, w3].includes(parseInt(id))) {
-                    isWin = true; odds = state.currentRace.odds.place[id];
-                }
-                else if (bet.type === 'exacta' && id === `${w1}-${w2}`) {
-                    isWin = true; odds = state.currentRace.odds.exacta[id];
-                }
-                else if (bet.type === 'quinella') {
-                    const combo = [w1, w2].sort((a, b) => a - b).join('-');
-                    if (id === combo) { isWin = true; odds = state.currentRace.odds.quinella[id]; }
-                }
-                else if (bet.type === 'wide') {
-                    const wCombos = [
-                        [w1, w2].sort((a, b) => a - b).join('-'),
-                        [w1, w3].sort((a, b) => a - b).join('-'),
-                        [w2, w3].sort((a, b) => a - b).join('-')
-                    ];
-                    if (wCombos.includes(id)) { isWin = true; odds = state.currentRace.odds.wide[id]; }
-                }
-                else if (bet.type === 'trifecta' && id === `${w1}-${w2}-${w3}`) {
-                    isWin = true; odds = state.currentRace.odds.trifecta[id];
-                }
-                else if (bet.type === 'trio') {
-                    const combo = [w1, w2, w3].sort((a, b) => a - b).join('-');
-                    if (id === combo) { isWin = true; odds = state.currentRace.odds.trio[id]; }
-                }
-
-                if (isWin) {
-                    totalPayout += Math.floor(amt * parseFloat(odds));
+            // 通算成績
+            if (!state.stats) state.stats = emptyStats();
+            const st = state.stats;
+            st.races++;
+            if (results.length > 0) st.betRaces++;
+            if (totalPayout > 0) st.hitRaces++;
+            results.forEach(r => {
+                const by = st.byType[r.type] || (st.byType[r.type] = { tickets: 0, hits: 0, bet: 0, pay: 0 });
+                st.tickets++; by.tickets++;
+                st.betSum += r.amount; by.bet += r.amount;
+                if (r.hit) {
+                    st.hits++; by.hits++;
+                    st.paySum += r.payout; by.pay += r.payout;
+                    if (!st.maxOdds || r.odds > st.maxOdds.odds) st.maxOdds = { odds: r.odds, type: r.type, id: r.id, race: raceNo };
                 }
             });
+            if (totalPayout > 0 && (!st.bestPay || totalPayout > st.bestPay.amount)) {
+                st.bestPay = { amount: totalPayout, race: raceNo, name: race.name };
+            }
 
-            state.raceCount = (state.raceCount || 0) + 1;
+            state.raceCount = raceNo;
             state.coins += totalPayout;
             state.bets = [];
-            state.currentRace.status = 'settled'; // 精算済み（リロードしても二重に払い戻さない）
-            document.getElementById('payout-amount').innerText = totalPayout;
+            race.status = 'settled'; // 精算済み（リロードしても二重に払い戻さない）
+
+            // --- 表示 ---
+            const bigWin = totalPayout > 0 && (totalPayout >= 1000 || totalPayout >= betSum * 10);
+            const kind = results.length === 0 ? 'none' : (totalPayout === 0 ? 'miss' : (bigWin ? 'big' : 'hit'));
+            const banner = document.getElementById('result-banner');
+            banner.className = `result-banner ${kind}`;
+            banner.textContent = { none: '今回は見るだけ', miss: 'はずれ…', hit: '🎯 的中！', big: '🎉 大当たり！' }[kind];
+            document.getElementById('result-head').className = `glass-card result-head ${kind}`;
+
+            const medal = ['🥇', '🥈', '🥉'];
+            document.getElementById('winner-announce').innerHTML = [winner, second, third].map((h, i) =>
+                `<div class="podium-row"><span>${medal[i]}</span>${gateBadge(h.entryNo)}<span class="podium-name">${escapeHtml(h.name)}</span></div>`).join('');
+
+            document.getElementById('payout-details').style.display = results.length ? '' : 'none';
+            const profit = totalPayout - betSum;
+            document.getElementById('result-pl').innerHTML = results.length
+                ? `賭け金 ${betSum.toLocaleString()} → 払戻 ${totalPayout.toLocaleString()}　<b class="${profit > 0 ? 'plus' : profit < 0 ? 'minus' : ''}">収支 ${profit > 0 ? '+' : ''}${profit.toLocaleString()}</b>`
+                : '馬券を買わずにレースを見ました。';
+
+            document.getElementById('result-bets').innerHTML = results.length
+                ? results.map(r => `<div class="slip-line ${r.hit ? 'hit' : 'miss'}">
+                        <span class="slip-type">${BET_LABEL[r.type]}</span>
+                        <span class="slip-combo">${comboHtml(r.type, r.id)}</span>
+                        <span class="slip-amt">${r.amount.toLocaleString()}<small> × ${r.odds.toFixed(1)}</small></span>
+                        <span class="slip-result">${r.hit ? `的中 +${r.payout.toLocaleString()}` : 'はずれ'}</span>
+                    </div>`).join('')
+                : '<div class="bet-empty">今回は馬券を買いませんでした。</div>';
+
+            document.getElementById('result-order').innerHTML = `<div class="order-table">` + sortedEntries.map((h, i) => `
+                <div class="order-row ${i < 3 ? 'top' : ''}">
+                    <span class="order-rank">${i + 1}着</span>
+                    ${gateBadge(h.entryNo)}
+                    <span class="order-name">${escapeHtml(h.name)}</span>
+                    <span class="order-margin">${i === 0 ? '' : (h.marginLabel || '')}</span>
+                    <span class="order-odds">${race.odds.win[h.entryNo]}倍<small> ${pop[h.entryNo]}人気</small></span>
+                </div>`).join('') + `</div>`;
+
+            document.getElementById('result-stats').innerHTML = statsTilesHtml(true);
 
             updateUI();
             saveGame();
             switchScreen('result-screen');
+            playResultFx(kind, totalPayout);
 
             // 次のレース（オッズ計算に少し時間がかかる）は結果を表示してから用意する
             setTimeout(prepareRace, 50);
@@ -2115,9 +2375,96 @@
             };
         }
 
+        // 払戻金を数え上げ、当たったらコインを飛ばす
+        function playResultFx(kind, total) {
+            const amountEl = document.getElementById('payout-amount');
+            const fx = document.getElementById('result-fx');
+            fx.innerHTML = '';
+            if (total <= 0) { amountEl.textContent = total.toLocaleString(); return; }
+            const start = performance.now(), dur = kind === 'big' ? 1600 : 900;
+            const stepCount = now => {
+                const t = Math.min(1, (now - start) / dur);
+                amountEl.textContent = Math.round(total * (1 - Math.pow(1 - t, 3))).toLocaleString();
+                if (t < 1) requestAnimationFrame(stepCount);
+            };
+            amountEl.textContent = '0';
+            requestAnimationFrame(stepCount);
+            const n = kind === 'big' ? 36 : 14;
+            for (let i = 0; i < n; i++) {
+                const c = document.createElement('span');
+                c.className = 'fx-coin';
+                c.textContent = kind === 'big' && i % 3 === 0 ? '✨' : '🪙';
+                c.style.left = `${10 + Math.random() * 80}%`;
+                c.style.setProperty('--dx', `${(Math.random() - 0.5) * 120}px`);
+                c.style.animationDelay = `${Math.random() * (kind === 'big' ? 0.9 : 0.4)}s`;
+                fx.appendChild(c);
+            }
+            setTimeout(() => { fx.innerHTML = ''; }, 3000);
+        }
+
+        // --- 成績 ---
+        function pct(a, b) {
+            return b > 0 ? `${(a / b * 100).toFixed(1)}%` : '-';
+        }
+
+        function statsTilesHtml(compact) {
+            const st = state.stats || emptyStats();
+            const profit = st.paySum - st.betSum;
+            const tiles = [
+                ['回収率', pct(st.paySum, st.betSum), st.betSum > 0 ? (st.paySum >= st.betSum ? 'plus' : 'minus') : ''],
+                ['的中率', pct(st.hits, st.tickets), ''],
+                ['収支', `${profit > 0 ? '+' : ''}${profit.toLocaleString()}`, profit > 0 ? 'plus' : profit < 0 ? 'minus' : ''],
+                ['レース数', st.races.toLocaleString(), '']
+            ];
+            if (!compact) {
+                tiles.push(
+                    ['馬券を買ったレース', st.betRaces.toLocaleString(), ''],
+                    ['当たったレース', `${(st.hitRaces || 0).toLocaleString()}`, ''],
+                    ['賭けた合計', st.betSum.toLocaleString(), ''],
+                    ['払戻の合計', st.paySum.toLocaleString(), '']
+                );
+            }
+            return `<div class="stat-tiles">${tiles.map(([l, v, c]) => `<div class="tile"><div class="tile-label">${l}</div><div class="tile-value ${c}">${v}</div></div>`).join('')}</div>`;
+        }
+
+        function renderStats() {
+            const st = state.stats || emptyStats();
+            const best = st.bestPay
+                ? `💰 ${st.bestPay.amount.toLocaleString()}<small>（${st.bestPay.race}戦目 ${escapeHtml(st.bestPay.name)}）</small>` : 'まだありません';
+            const maxOdds = st.maxOdds
+                ? `${st.maxOdds.odds.toFixed(1)}倍<small>（${BET_LABEL[st.maxOdds.type]} ${st.maxOdds.id}・${st.maxOdds.race}戦目）</small>` : 'まだありません';
+            const rows = TABS_DEF.map(t => {
+                const b = st.byType[t.id];
+                if (!b) return `<div class="type-row"><span>${t.label}</span><span>-</span><span>-</span><span>-</span></div>`;
+                return `<div class="type-row"><span>${t.label}</span><span>${b.hits}/${b.tickets}</span><span>${pct(b.hits, b.tickets)}</span><span class="${b.pay >= b.bet ? 'plus' : 'minus'}">${pct(b.pay, b.bet)}</span></div>`;
+            }).join('');
+            document.getElementById('stats-content').innerHTML = `
+                <div class="glass-card">
+                    <h2 style="margin-bottom:0.75rem;">📊 通算成績</h2>
+                    ${statsTilesHtml(false)}
+                    <div class="record-line"><span>最高の払戻</span><span>${best}</span></div>
+                    <div class="record-line"><span>最高オッズの的中</span><span>${maxOdds}</span></div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="card-title">馬券の種類ごと</h3>
+                    <div class="type-row head"><span>種類</span><span>的中/購入</span><span>的中率</span><span>回収率</span></div>
+                    ${rows}
+                </div>
+                <p class="stats-note">※ 成績は v${st.since || '1.9.0'} から記録しています。回収率 = 払戻の合計 ÷ 賭けた合計。</p>`;
+        }
+
         // --- Utils ---
+        let shownCoins = null;
         function updateUI() {
             coinLabel.innerText = state.coins.toLocaleString();
+            // 所持金が変わったら、ヘッダーの数字を少し弾ませる
+            if (shownCoins !== null && shownCoins !== state.coins) {
+                const box = document.querySelector('.coin-main');
+                box.classList.remove('bump', 'up', 'down');
+                void box.offsetWidth;
+                box.classList.add('bump', state.coins > shownCoins ? 'up' : 'down');
+            }
+            shownCoins = state.coins;
             const raceCountEl = document.getElementById('race-count-display');
             if (raceCountEl) raceCountEl.innerText = state.raceCount || 0;
 
@@ -2160,6 +2507,8 @@
             }
             delete state.gameCleared;
             if (typeof state.debt !== 'number') state.debt = 0;
+            if (!state.stats) state.stats = emptyStats();
+            if (!Array.isArray(state.lastBets)) state.lastBets = [];
 
             // 初期の過去5レース結果（予想指標用）を用意する
             if (state.recentResults.length === 0) {
