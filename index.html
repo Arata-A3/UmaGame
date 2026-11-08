@@ -254,7 +254,7 @@
 
         // --- Version ---
         // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
-        const APP_VERSION = '1.4.0';
+        const APP_VERSION = '1.4.1';
 
         // --- Application State ---
         let state = {
@@ -677,7 +677,7 @@
         // --- Race Model (オッズ計算と実際のレースで共通) ---
         // 各馬は「巡航速度（スピード）」で走りながらスタミナを消費し、尽きると失速する。
         // 終盤に競り合うと根性で伸びる。距離が長いほどスタミナの消費が大きい。
-        const TICKS_PER_SEC = 60;            // 1.0x 時の1秒あたりのシミュレーション回数
+        const TICKS_PER_SEC = 45;            // 1.0x 時の1秒あたりのシミュレーション回数（約27秒で決着）
         const BASE_STEP = 100 / (20 * 60);   // 平均的な馬が1.0xで約20秒でゴールする進み幅
         // 能力の効き具合（大きいほど能力差が出て堅いレースになる）
         const SPEED_EFFECT = 0.11;    // スピード
@@ -1354,7 +1354,7 @@
             const TRACK = {
                 R: 1,                            // カーブの半径（内ラチ）
                 L: portrait ? 1.3 : 2.6,         // 直線の長さ（縦長画面では短くする）
-                width: 0.55                      // コースの幅
+                width: 0.9                       // コースの幅
             };
             const CURVE_LEN = Math.PI * TRACK.R;
             const LAP = 2 * TRACK.L + 2 * CURVE_LEN;
@@ -1362,6 +1362,11 @@
             const COURSE_LEN = LAP * race.distance / 1600; // 1600mで1周
             const CAM_D = 3.4, CAM_H = portrait ? 4.2 : 2.4; // カメラの奥行きと高さ（縦長画面は高めから見下ろす）
             const FIG = 0.5;                     // 人形の大きさ（コース座標）
+            const LANE_BASE = 0.07, LANE_GAP = 0.105; // 内ラチからの位置と、馬どうしの間隔
+
+            // 馬券を買った馬
+            const myHorses = new Set();
+            (state.bets || []).forEach(b => String(b.id).split('-').forEach(n => myHorses.add(parseInt(n))));
 
             // 枠の色（ゼッケン）
             const GATE_COLORS = ['#f5f5f5', '#222222', '#d83030', '#2f62d8', '#f0c419', '#2e9e46', '#f28a1e', '#f37ab7'];
@@ -1370,7 +1375,7 @@
             const COATS = ['#7b4a2a', '#9c5530', '#4a2e1e', '#2a2421', '#8f8f8f', '#b06a35'];
 
             entries.forEach(h => {
-                h.lane = 0.04 + (h.entryNo - 1) * 0.06; // ゲートの順に内から並ぶ
+                h.lane = LANE_BASE + (h.entryNo - 1) * LANE_GAP; // ゲートの順に内から並ぶ
                 h.overrun = 0;
                 h.coat = COATS[h.id % COATS.length];
             });
@@ -1456,13 +1461,15 @@
                 ctx.closePath();
             }
 
-            function drawCourse(w, h) {
-                // 筐体の外側
+            function drawBackground(w, h) {
                 const bg = ctx.createLinearGradient(0, 0, 0, h);
                 bg.addColorStop(0, '#0b1020');
                 bg.addColorStop(1, '#1b2535');
                 ctx.fillStyle = bg;
                 ctx.fillRect(0, 0, w, h);
+            }
+
+            function drawCourse(w, h) {
 
                 // 外側の芝生
                 ringPath(TRACK.width, TRACK.width + 0.12);
@@ -1491,7 +1498,7 @@
                 const k = c.k;
                 ctx.save();
                 ctx.fillStyle = 'rgba(0,0,0,0.55)';
-                const bw = Math.min(w * 0.6, k * 1.6), bh = Math.max(16, k * 0.22);
+                const bw = Math.min(w * 0.5, k * 1.1), bh = Math.max(14, k * 0.15);
                 ctx.fillRect(c.X - bw / 2, c.Y - bh / 2, bw, bh);
                 ctx.strokeStyle = '#d4af37';
                 ctx.strokeRect(c.X - bw / 2, c.Y - bh / 2, bw, bh);
@@ -1548,13 +1555,9 @@
                 ctx.beginPath(); ctx.ellipse(0, -3 * s, 26 * s, 4 * s, 0, 0, Math.PI * 2); ctx.fill();
 
                 ctx.scale(facing * s, s);
-                const bob = Math.sin(phase * 2) * 2.5;
+                const bob = Math.sin(phase * 2) * 1.5;
                 const outline = 'rgba(0,0,0,0.55)';
 
-                if (horse.dueling && !horse.finished && pos <= 3) {
-                    ctx.shadowColor = '#ffd700';
-                    ctx.shadowBlur = 14;
-                }
 
                 const legColor = horse.coat;
                 function leg(hx, hy, angle, far) {
@@ -1657,30 +1660,35 @@
                 ctx.restore();
             }
 
-            // 人形の上の目印（馬番・着順・スタミナ切れ）
-            function drawMarker(px, py, size, horse) {
-                const r = Math.max(7, size * 0.11);
-                const y = py - size * 1.12;
-                const g = horse.entryNo - 1;
-                ctx.beginPath();
-                ctx.arc(px, y, r, 0, Math.PI * 2);
-                ctx.fillStyle = GATE_COLORS[g];
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-                ctx.fillStyle = GATE_TEXT[g];
-                ctx.font = `bold ${Math.round(r * 1.25)}px sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(horse.entryNo, px, y + 1);
-                if (horse.finished) {
+            // 人形の上の目印（自分の馬の▼、ゴール後の上位3頭の着順）
+            function drawMarker(px, py, size, horse, t) {
+                const top = py - size * 1.05;
+                if (myHorses.has(horse.entryNo)) {
+                    const a = Math.max(7, size * 0.1);
+                    const y = top - a - Math.abs(Math.sin(t / 250)) * a * 0.6;
+                    ctx.beginPath();
+                    ctx.moveTo(px - a, y - a * 1.2);
+                    ctx.lineTo(px + a, y - a * 1.2);
+                    ctx.lineTo(px, y);
+                    ctx.closePath();
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fill();
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+                if (horse.finished && horse.rank <= 3) {
+                    const fs = Math.max(12, size * 0.16);
+                    ctx.font = `bold ${Math.round(fs)}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+                    const label = `${horse.rank}着`;
+                    const ly = top - (myHorses.has(horse.entryNo) ? fs * 1.6 : 0);
+                    ctx.strokeText(label, px, ly);
                     ctx.fillStyle = horse.rank === 1 ? '#ffd700' : '#fff';
-                    ctx.font = `bold ${Math.round(r * 1.3)}px sans-serif`;
-                    ctx.fillText(`${horse.rank}着`, px + r * 2.6, y + 1);
-                } else if (horse.exhausted) {
-                    ctx.font = `${Math.round(r * 1.5)}px sans-serif`;
-                    ctx.fillText('💦', px + r * 2.2, y);
+                    ctx.fillText(label, px, ly);
                 }
             }
 
@@ -1695,49 +1703,108 @@
 
                 const chip = Math.min(26, (w - 20) / 8 - 4);
                 order.forEach((hh, i) => {
-                    const x = 10 + i * (chip + 4) + chip / 2, y = 42;
+                    const x = 10 + i * (chip + 4) + chip / 2, y = 46;
                     const g = hh.entryNo - 1;
                     ctx.beginPath();
                     ctx.arc(x, y, chip / 2, 0, Math.PI * 2);
                     ctx.fillStyle = GATE_COLORS[g];
                     ctx.fill();
-                    ctx.strokeStyle = i === 0 ? '#ffd700' : 'rgba(255,255,255,0.4)';
-                    ctx.lineWidth = i === 0 ? 2.5 : 1;
+                    const mine = myHorses.has(hh.entryNo);
+                    ctx.strokeStyle = mine ? '#ffd700' : 'rgba(255,255,255,0.4)';
+                    ctx.lineWidth = mine ? 3 : 1;
                     ctx.stroke();
                     ctx.fillStyle = GATE_TEXT[g];
                     ctx.font = `bold ${Math.round(chip * 0.5)}px sans-serif`;
                     ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
                     ctx.fillText(hh.entryNo, x, y + 1);
+                    if (mine) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.beginPath();
+                        ctx.moveTo(x - 4, y - chip / 2 - 7);
+                        ctx.lineTo(x + 4, y - chip / 2 - 7);
+                        ctx.lineTo(x, y - chip / 2 - 2);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
                 });
+            }
+
+            // 馬群を追いかけてズームするカメラ（テレビ中継風）
+            const cam = { Z: 1, fx: null, fy: null };
+            function updateCamera(w, h, topReserve, bottomReserve, shots, order) {
+                const availW = w - 16, availH = h - topReserve - bottomReserve;
+                const cx = w / 2, cy = topReserve + availH / 2;
+                // 上位5頭が収まるように寄る
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, maxSize = 0;
+                order.slice(0, 5).forEach(hh => {
+                    const p = shots[hh.entryNo];
+                    maxSize = Math.max(maxSize, p.size);
+                    minX = Math.min(minX, p.X - p.size * 0.7); maxX = Math.max(maxX, p.X + p.size * 0.7);
+                    minY = Math.min(minY, p.Y - p.size * 1.3); maxY = Math.max(maxY, p.Y + p.size * 0.1);
+                });
+                // 手前を走るときに大きくなりすぎないよう、人形の最大サイズで上限をかける
+                const maxFigPx = Math.min(100, availH * 0.18);
+                const targetZ = Math.max(1, Math.min(2.6, maxFigPx / maxSize, availW * 0.85 / (maxX - minX), availH * 0.8 / (maxY - minY)));
+                let tx = (minX + maxX) / 2, ty = (minY + maxY) / 2;
+                if (cam.fx === null) { cam.Z = targetZ; cam.fx = tx; cam.fy = ty; }
+                cam.Z += (targetZ - cam.Z) * 0.04;
+                cam.fx += (tx - cam.fx) * 0.08;
+                cam.fy += (ty - cam.fy) * 0.08;
+                // コースの外に寄りすぎて余白が出ないよう、表示範囲をコース内にとどめる
+                const halfW = (availW / 2) / cam.Z, halfH = (availH / 2) / cam.Z;
+                const fx = Math.min(Math.max(cam.fx, 8 + halfW), w - 8 - halfW);
+                const fy = Math.min(Math.max(cam.fy, topReserve + halfH), h - bottomReserve - halfH);
+                return { Z: cam.Z, fx, fy, cx, cy };
             }
 
             function draw() {
                 const { w, h } = resizeCanvas();
-                const topReserve = 62, bottomReserve = 96;
+                const topReserve = 66, bottomReserve = 96;
                 fitView(w, h, topReserve, bottomReserve);
                 const order = currentOrder();
                 const posOf = {};
                 order.forEach((hh, i) => posOf[hh.entryNo] = i + 1);
 
-                drawCourse(w, h);
-
-                // 奥から順に描く（人形とゴール板）
-                const items = entries.map(hh => {
+                // 各馬の位置（ズーム前の画面座標）
+                const shots = {};
+                entries.forEach(hh => {
                     const u = horseU(hh);
                     const p = trackPoint(u, hh.lane);
                     const ahead = trackPoint(u + 0.02, hh.lane);
                     const sp = project(p.x, p.z), sa = project(ahead.x, ahead.z);
-                    return { z: p.z, draw: () => {
-                        const size = sp.k * FIG;
-                        const facing = sa.X >= sp.X ? 1 : -1;
-                        const phase = u * 18;
-                        drawFigure(sp.X, sp.Y, size, facing, hh, phase, posOf[hh.entryNo]);
-                    }, marker: () => drawMarker(sp.X, sp.Y, sp.k * FIG, hh) };
+                    shots[hh.entryNo] = { X: sp.X, Y: sp.Y, size: sp.k * FIG, z: p.z, u, facing: sa.X >= sp.X ? 1 : -1 };
+                });
+                const v = updateCamera(w, h, topReserve, bottomReserve, shots, order);
+                const toScreen = (X, Y) => ({ X: (X - v.fx) * v.Z + v.cx, Y: (Y - v.fy) * v.Z + v.cy });
+
+                drawBackground(w, h);
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(0, topReserve - 6, w, h - topReserve + 6);
+                ctx.clip();
+                ctx.translate(v.cx, v.cy);
+                ctx.scale(v.Z, v.Z);
+                ctx.translate(-v.fx, -v.fy);
+                drawCourse(w, h);
+
+                // 奥から順に描く（人形とゴール板）
+                const items = entries.map(hh => {
+                    const sh = shots[hh.entryNo];
+                    return { z: sh.z, draw: () => drawFigure(sh.X, sh.Y, sh.size, sh.facing, hh, sh.u * 11, posOf[hh.entryNo]) };
                 });
                 const gp = trackPoint(FINISH_U, TRACK.width + 0.06);
                 items.push({ z: gp.z, draw: drawGoalPost });
                 items.sort((a, b) => b.z - a.z).forEach(it => it.draw());
-                items.forEach(it => it.marker && it.marker());
+                ctx.restore();
+
+                // 目印はズーム後の画面座標に、一定の見やすい大きさで描く
+                const now = performance.now();
+                entries.forEach(hh => {
+                    const sh = shots[hh.entryNo];
+                    const sc = toScreen(sh.X, sh.Y);
+                    drawMarker(sc.X, sc.Y, sh.size * v.Z, hh, now);
+                });
 
                 drawHud(w, order);
             }
@@ -1746,7 +1813,7 @@
             function updateLanes() {
                 const order = currentOrder();
                 order.forEach((hh, i) => {
-                    const target = 0.04 + i * 0.06;
+                    const target = LANE_BASE + i * LANE_GAP;
                     hh.lane += (target - hh.lane) * 0.01;
                 });
             }
