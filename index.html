@@ -146,7 +146,7 @@
                         <li><b>GT（根性）</b>: 失速を抑え、ゴール前の競り合いで伸びます</li>
                         <li><b>芝・ダ</b>: 得意なコース。レースと違うと少し遅くなります</li>
                         <li><b>逃・先・差・追</b>: 脚質（逃げ・先行・差し・追込）</li>
-                        <li><b>矢印</b>: 前回からの調子の変化</li>
+                        <li><b>調子</b>: 絶好調・好調・普通・不調・絶不調の5段階。良いほど少し速く走ります</li>
                     </ul>
                     <p>馬をタップすると、くわしい情報が見られます。</p>
                 </details>
@@ -284,7 +284,7 @@
 
         // --- Version ---
         // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
-        const APP_VERSION = '1.9.1';
+        const APP_VERSION = '1.10.0';
 
         // --- Application State ---
         let state = {
@@ -465,6 +465,7 @@
                 document.getElementById('game-container').scrollTop = 0;
             }
             currentScreen = screenId;
+            if (screenId !== 'main-menu-screen') ensureHistoryGuard();
             document.getElementById('header-back-btn').classList.toggle('show', !!SCREEN_PARENT[screenId]);
             if (screenId === 'bank-screen') renderBank();
             if (screenId === 'stable-screen') renderStableInfo();
@@ -476,6 +477,23 @@
             const parent = SCREEN_PARENT[currentScreen];
             if (parent) switchScreen(parent);
         }
+
+        // スマホの戻るボタン・ブラウザの「戻る」: アプリを閉じずに、ひとつ前の画面へ戻る
+        // メニュー以外にいる間は、履歴に1つ「見張り」を積んでおき、戻るで消えたら画面を戻して積み直す
+        let historyGuard = false;
+        function ensureHistoryGuard() {
+            if (historyGuard) return;
+            try { history.pushState({ uma: 'guard' }, ''); historyGuard = true; } catch (e) { /* 使えない環境では何もしない */ }
+        }
+        window.addEventListener('popstate', () => {
+            historyGuard = false;
+            if (document.getElementById('modal-overlay').classList.contains('open')) {
+                closeModal(); // ダイアログが開いていたら閉じるだけ
+            } else if (!raceInProgress) {
+                goBack();     // レース中は戻らない
+            }
+            if (currentScreen !== 'main-menu-screen' || raceInProgress) ensureHistoryGuard();
+        });
 
         // --- Labor (Stable) Logic ---
         let combo = 0;
@@ -493,7 +511,7 @@
             const msg = document.getElementById('stable-message');
             const bar = document.getElementById('stable-progress-bar');
             if (canEarnAtStable()) {
-                msg.innerHTML = `所持金が${STABLE_LIMIT}コイン未満の間、汚れをタップしてコインを稼げます。素早く続けて掃除するとコンボで報酬アップ！ たまに出る🥕は+${CARROT_REWARD}。`;
+                msg.innerHTML = `所持金が${STABLE_LIMIT}コイン未満の間、汚れをタップしてコインを稼げます。素早く続けて掃除するとコンボで報酬アップ！ たまに出る${icon('carrot')}にんじんは+${CARROT_REWARD}。`;
             } else {
                 msg.innerHTML = `所持金が${STABLE_LIMIT}コイン以上あるので、いまは掃除の必要はありません。`;
             }
@@ -522,7 +540,7 @@
             const isCarrot = Math.random() < CARROT_CHANCE;
             const dirt = document.createElement('div');
             dirt.className = isCarrot ? 'dirt carrot' : 'dirt';
-            if (isCarrot) dirt.textContent = '🥕';
+            if (isCarrot) dirt.innerHTML = icon('carrot');
             const rect = dirtField.getBoundingClientRect();
             const x = Math.random() * Math.max(0, rect.width - 56);
             const y = Math.random() * Math.max(0, rect.height - 56);
@@ -681,6 +699,7 @@
             document.getElementById('modal-title').textContent = title;
             document.getElementById('modal-body').innerHTML = bodyHtml;
             document.getElementById('modal-overlay').classList.add('open');
+            ensureHistoryGuard(); // 戻るボタンでダイアログを閉じられるように
         }
 
         function closeModal() {
@@ -870,6 +889,9 @@
             info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
         };
         function icon(name, style = '') {
+            if (name === 'carrot') {
+                return `<svg class="ico carrot-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 7.6C11 6 6.2 9.6 3.3 19.4c-.3.9.4 1.6 1.3 1.3 9.8-2.9 13.4-7.7 11.8-11.5z" fill="#ff8a1f" stroke="#b85400" stroke-width="1.4" stroke-linejoin="round"/><path d="M8.2 12.6l2 1.4M6.4 16l1.8 1.2M10.8 10.2l1.4 1" stroke="#b85400" stroke-width="1.2" stroke-linecap="round"/><path d="M15.2 8.2c-.3-2.6.8-4.6 2.8-5.6M15.8 8.6c2.2-1.3 4.6-1.2 6 .2M15.4 8.3c1.4-2 3.6-2.9 5.6-2.6" fill="none" stroke="#3fae4a" stroke-width="2" stroke-linecap="round"/></svg>`;
+            }
             if (name === 'coin') {
                 return `<svg class="ico coin-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#f0c419" stroke="#9a7300" stroke-width="2"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#9a7300" stroke-width="1.8"/></svg>`;
             }
@@ -959,6 +981,16 @@
             return { mark: '×', text: '足りない（終盤に失速しやすい）', color: '#ff6b6b' };
         }
 
+        // 調子（1〜5）
+        const CONDITION_INFO = { 5: ['絶好調', '#ff8fb1'], 4: ['好調', '#6fe39a'], 3: ['普通', '#c9d1d9'], 2: ['不調', '#8fb8ff'], 1: ['絶不調', '#a59cff'] };
+        function condBadge(c) {
+            const [t, col] = CONDITION_INFO[c] || CONDITION_INFO[3];
+            return `<span class="cond-badge" style="color:${col}; border-color:${col};">${t}</span>`;
+        }
+        function condChangeText(arrow) {
+            return arrow === '↑' ? '前回より上がった' : arrow === '↓' ? '前回より下がった' : '前回と同じ';
+        }
+
         function placementsHtml(id) {
             const placements = (state.recentPlacements && state.recentPlacements[id]) || [];
             if (placements.length === 0) return '初出走';
@@ -985,22 +1017,20 @@
             order.forEach(({ h: horse, no }) => {
                 const item = document.createElement('div');
                 item.className = 'entry-card';
-                // 調子 4, 5 を UP、1, 2 を DOWN とする
-                const condClass = horse.condition >= 4 ? 'condition-up' : (horse.condition <= 2 ? 'condition-down' : '');
                 const aptHtml = horse.apt === 'G' ? '<span style="color:#7CFC00;">芝</span>' : '<span style="color:#DEB887;">ダ</span>';
                 const fit = distanceFit(horse, race);
                 item.innerHTML = `
                     <div class="entry-left">${gateBadge(no)}<div class="thumb-slot"></div></div>
                     <div class="entry-main">
                         <div class="entry-name">${escapeHtml(horse.name)}</div>
-                        <div class="entry-tags">[${aptHtml}/${horse.type}] 距離<span style="color:${fit.color}; font-weight:bold;">${fit.mark}</span> ${popBadge(pop[no])}</div>
+                        <div class="entry-tags">${aptHtml}・${TYPE_NAMES[horse.type]}・距離<span style="color:${fit.color}; font-weight:bold;">${fit.mark}</span></div>
                     </div>
                     <div class="entry-right">
                         <div class="entry-odds">${race.odds ? race.odds.win[no] : '--'}<small>倍</small></div>
-                        <div class="${condClass} entry-cond">調子 ${horse.conditionTxt}</div>
+                        <div class="entry-pop">${popBadge(pop[no])}</div>
                     </div>
                     <div class="entry-stats">${statBar('SP', horse.speed)}${statBar('ST', horse.stamina)}${statBar('GT', horse.guts)}</div>
-                    <div class="entry-recent">近走: ${placementsHtml(horse.id)}</div>
+                    <div class="entry-recent"><span>調子 ${condBadge(horse.condition)}</span><span>近走 ${placementsHtml(horse.id)}</span></div>
                 `;
                 const thumb = horseThumb(horse, no, window.innerWidth <= 480 ? 52 : 64);
                 if (thumb) item.querySelector('.thumb-slot').appendChild(thumb);
@@ -1012,23 +1042,22 @@
         }
 
         // 馬をタップしたときの詳細
-        function showHorseDetail(no) {
-            const race = state.currentRace;
+        function showHorseDetail(no, race = state.currentRace, rank = 0) {
             const h = race.entries[no - 1];
             if (!h) return;
             const pop = popularityOf(race);
             const fit = distanceFit(h, race);
             const surfaceOk = h.apt === race.type.element;
-            const cond = { 5: '絶好調', 4: '好調', 3: 'ふつう', 2: '不調', 1: '絶不調' }[h.condition] || 'ふつう';
             showModal(`${no}番 ${h.name}`, `
                 <div class="detail-thumb"></div>
                 <div class="detail-grid">
+                    ${rank ? `<div>着順</div><div><b style="color:var(--accent-gold);">${rank}着</b></div>` : ''}
                     <div>単勝</div><div><b style="color:var(--accent-gold);">${race.odds.win[no]}倍</b> ${popBadge(pop[no])}</div>
                     <div>複勝</div><div>${race.odds.place[no]}倍</div>
                     <div>脚質</div><div>${TYPE_NAMES[h.type]}<br><small>${TYPE_DESC[h.type]}</small></div>
                     <div>コース</div><div>${h.apt === 'G' ? '芝' : 'ダート'}が得意 ${surfaceOk ? '<span style="color:var(--accent-emerald);">（今回○）</span>' : '<span style="color:#ff6b6b;">（今回は苦手）</span>'}</div>
                     <div>距離</div><div><span style="color:${fit.color}; font-weight:bold;">${fit.mark}</span> ${race.distance}m はスタミナが${fit.text}</div>
-                    <div>調子</div><div>${cond}（前回から ${h.conditionTxt}）</div>
+                    <div>調子</div><div>${condBadge(h.condition)} ${condChangeText(h.conditionTxt)}</div>
                     <div>近走</div><div>${placementsHtml(h.id)}</div>
                 </div>
                 <div class="detail-stats">${statBar('SP', h.speed, true)}${statBar('ST', h.stamina, true)}${statBar('GT', h.guts, true)}</div>
@@ -1150,7 +1179,21 @@
         ];
         const BET_LABEL = Object.fromEntries(TABS_DEF.map(t => [t.id, t.label]));
         const ORDERED_TYPES = ['exacta', 'trifecta'];
-        const CHIPS = [1, 10, 50, 100, 'all'];
+        // ＋−で増減する額の候補（所持金の1%くらいから、キリのよい4つ）
+        const NICE_AMOUNTS = [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000];
+        function chipOptions() {
+            const base = Math.max(1, state.coins * 0.01);
+            let i = 0;
+            while (i < NICE_AMOUNTS.length - 4 && NICE_AMOUNTS[i + 1] <= base) i++;
+            return NICE_AMOUNTS.slice(i, i + 4);
+        }
+        function fmtAmount(n) {
+            return n >= 10000 && n % 10000 === 0 ? `${n / 10000}万` : n.toLocaleString();
+        }
+        function chipValue() {
+            if (betSelections.chip === 'custom') return Math.max(0, parseInt(betSelections.customChip) || 0);
+            return betSelections.chip;
+        }
 
         function betTotal() {
             return Object.values(betSelections.amounts).reduce((a, b) => a + b, 0);
@@ -1182,12 +1225,12 @@
             let next;
             if (sign > 0) {
                 const remain = state.coins - betTotal();
-                const add = betSelections.chip === 'all' ? remain : betSelections.chip;
+                const add = betSelections.chip === 'all' ? remain : chipValue();
                 if (add <= 0) { flashBetBar(); return; }
                 next = cur + add;
             } else {
                 if (cur <= 0) return;
-                next = betSelections.chip === 'all' ? 0 : Math.max(0, cur - betSelections.chip);
+                next = betSelections.chip === 'all' ? 0 : Math.max(0, cur - chipValue());
             }
             if (next > 0) betSelections.amounts[key] = next;
             else delete betSelections.amounts[key];
@@ -1198,26 +1241,47 @@
 
         function setBetChip(chip) {
             betSelections.chip = chip;
-            document.querySelectorAll('#chip-select button').forEach(b => b.classList.toggle('on', String(chip) === b.dataset.chip));
+            renderBettingInterface();
+            if (chip === 'custom') {
+                const el = document.getElementById('custom-chip');
+                if (el && !el.value) el.focus();
+            }
         }
 
         function removeBet(key) {
+            slipNote = '';
             delete betSelections.amounts[key];
             renderBettingInterface();
         }
 
         function clearBets() {
+            slipNote = '';
             betSelections.amounts = {};
             renderBettingInterface();
         }
 
-        // 前回と同じ馬券（馬番と金額が同じもの）を入れる
+        // 前回の買い方をくり返す。出走馬は毎回変わるので、馬番ではなく「人気」で合わせる
+        // （例: 前回「1番人気の単勝」を買っていたら、今回も1番人気の馬の単勝を入れる）
+        let slipNote = '';
+        function lastBetsUsable() {
+            return (state.lastBets || []).filter(b => Array.isArray(b.pops));
+        }
         function repeatLastBets() {
-            const odds = state.currentRace.odds;
+            const race = state.currentRace;
+            const pop = popularityOf(race);
+            const noOfPop = {};
+            Object.keys(pop).forEach(no => { noOfPop[pop[no]] = parseInt(no); });
             betSelections.amounts = {};
-            (state.lastBets || []).forEach(b => {
-                if (odds[b.type] && odds[b.type][b.id]) betSelections.amounts[b.type + '_' + b.id] = b.amount;
+            lastBetsUsable().forEach(b => {
+                let nos = b.pops.map(p => noOfPop[p]);
+                if (nos.some(n => !n)) return;
+                if (!ORDERED_TYPES.includes(b.type)) nos = nos.slice().sort((x, y) => x - y);
+                const id = nos.join('-');
+                if (!race.odds[b.type] || !race.odds[b.type][id]) return;
+                const key = b.type + '_' + id;
+                betSelections.amounts[key] = (betSelections.amounts[key] || 0) + b.amount;
             });
+            slipNote = '前回と同じ人気の馬で入れました（例: 前回1番人気の単勝 → 今回も1番人気の単勝）。';
             renderBettingInterface();
         }
 
@@ -1264,6 +1328,9 @@
             if (!race.odds.exacta) calculateOdds();
             const pop = popularityOf(race);
             const activeDef = TABS_DEF.find(t => t.id === currentBetTab);
+            // 所持金が変わって候補から外れた額を選んでいたら、2番目の候補に合わせる
+            const chips = chipOptions();
+            if (typeof betSelections.chip === 'number' && !chips.includes(betSelections.chip)) betSelections.chip = chips[1];
             const isSingle = (currentBetTab === 'win' || currentBetTab === 'place');
             const isDouble = (currentBetTab === 'quinella' || currentBetTab === 'exacta' || currentBetTab === 'wide');
             const isTriple = (currentBetTab === 'trio' || currentBetTab === 'trifecta');
@@ -1275,9 +1342,14 @@
                 </div>
                 <div class="bet-desc">${icon('info', 'color:var(--accent-gold);')} ${activeDef.desc}</div>
                 <div class="bet-tools">
-                    <div class="tool-row">
+                    <div class="tool-col">
                         <span class="tool-label">＋−で増減する額</span>
-                        <div class="seg" id="chip-select">${CHIPS.map(c => `<button data-chip="${c}" class="${String(betSelections.chip) === String(c) ? 'on' : ''}" onclick="setBetChip(${c === 'all' ? "'all'" : c})">${c === 'all' ? '残り全部' : c}</button>`).join('')}</div>
+                        <div class="seg chip-seg" id="chip-select">
+                            ${chips.map(c => `<button class="${betSelections.chip === c ? 'on' : ''}" onclick="setBetChip(${c})">${fmtAmount(c)}</button>`).join('')}
+                            <button class="${betSelections.chip === 'custom' ? 'on' : ''}" onclick="setBetChip('custom')">自由</button>
+                            <button class="${betSelections.chip === 'all' ? 'on' : ''}" onclick="setBetChip('all')">残り全部</button>
+                        </div>
+                        ${betSelections.chip === 'custom' ? `<label class="custom-chip">1回に増減する額 <input id="custom-chip" type="number" min="1" inputmode="numeric" placeholder="例: 300" value="${betSelections.customChip || ''}" oninput="betSelections.customChip = parseInt(this.value) || 0;"> コイン</label>` : ''}
                     </div>
                     <div class="tool-row">
                         <span class="tool-label">並び順</span>
@@ -1329,7 +1401,7 @@
                     let label;
                     if (isSingle) {
                         const h = race.entries[parseInt(c.key) - 1];
-                        label = `${gateBadge(parseInt(c.key))}<span class="bet-name">${h ? escapeHtml(h.name) : ''}</span>${popBadge(pop[c.key])}`;
+                        label = `<span class="tap-detail" onclick="showHorseDetail(${parseInt(c.key)})">${gateBadge(parseInt(c.key))}<span class="bet-name">${h ? escapeHtml(h.name) : ''}</span>${popBadge(pop[c.key])}</span>`;
                     } else {
                         label = comboHtml(currentBetTab, c.key);
                     }
@@ -1365,14 +1437,15 @@
             // 買う馬券の一覧
             const keys = Object.keys(betSelections.amounts);
             const slip = document.getElementById('bet-slip');
-            const canRepeat = (state.lastBets || []).length > 0;
+            const canRepeat = lastBetsUsable().length > 0;
             let html = `<div class="slip-head">
                     <h3>買う馬券 <span class="slip-count">${keys.length}件</span></h3>
                     <div class="slip-actions">
-                        ${canRepeat ? '<button class="mini-btn" onclick="repeatLastBets()">前回と同じ</button>' : ''}
+                        ${canRepeat ? '<button class="mini-btn" onclick="repeatLastBets()">前回の買い方</button>' : ''}
                         ${keys.length ? '<button class="mini-btn danger" onclick="clearBets()">すべて消す</button>' : ''}
                     </div>
                 </div>`;
+            if (slipNote && keys.length) html += `<div class="slip-note">${slipNote}</div>`;
             if (keys.length === 0) {
                 html += `<div class="bet-empty">まだ選んでいません。オッズの横の ＋ を押すか、金額を入れてください。</div>`;
             } else {
@@ -1443,7 +1516,12 @@
             }
 
             state.coins -= totalBet;
-            if (bets.length > 0) state.lastBets = bets.map(b => ({ ...b }));
+            if (bets.length > 0) {
+                // 「前回の買い方」用に、馬番を人気に置き換えて覚えておく
+                const pop = popularityOf(state.currentRace);
+                state.lastBets = bets.map(b => ({ type: b.type, amount: b.amount, pops: b.id.split('-').map(n => pop[n]) }));
+            }
+            slipNote = '';
 
             // 賭けとレース中の状態を先に保存（途中でリロードされても同じレースを決着させる）
             state.bets = bets;
@@ -1776,20 +1854,21 @@
                 ctx.fillRect(0, 0, w, HUD_H);
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'middle';
-                ctx.font = 'bold 14px sans-serif';
+                ctx.font = 'bold 16px sans-serif';
                 ctx.fillStyle = '#fff';
                 const remText = finishedCount > 0 ? 'ゴール！' : `残り ${remainingMeters(leader.progress)}m`;
                 ctx.fillText(remText, 10, 14);
-                ctx.font = '12px sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.55)';
-                ctx.fillText(`${race.name}  ${isTurf ? '芝' : 'ダート'}${race.distance}m`, 10 + ctx.measureText(remText).width + 40, 14);
+                const remW = ctx.measureText(remText).width; // 文字の大きさを変える前に幅を測る
+                ctx.font = '13px sans-serif';
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fillText(`${isTurf ? '芝' : 'ダート'}${race.distance}m`, 10 + remW + 12, 14);
 
                 const x0 = 22, x1 = w - 34, y = 40, r = 9;
                 ctx.strokeStyle = 'rgba(255,255,255,0.35)';
                 ctx.lineWidth = 4;
                 ctx.lineCap = 'round';
                 ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
-                ctx.font = 'bold 10px sans-serif';
+                ctx.font = 'bold 12px sans-serif';
                 ctx.fillStyle = 'rgba(255,255,255,0.6)';
                 ctx.textAlign = 'center';
                 ctx.fillText('S', x0 - 12, y);
@@ -1829,6 +1908,26 @@
                 return cam;
             }
 
+            // 幅に入りきらない文字は末尾を「…」にする
+            function fitText(text, maxW) {
+                text = String(text);
+                if (ctx.measureText(text).width <= maxW) return text;
+                let t = text;
+                while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+                return t + '…';
+            }
+
+            // 左の列（馬名）をタップすると詳細
+            let tapLayout = null;
+            canvas.onclick = (e) => {
+                if (!tapLayout) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left, y = e.clientY - rect.top;
+                if (x > tapLayout.colW) return;
+                const i = Math.floor((y - tapLayout.trackTop) / tapLayout.laneH);
+                if (i >= 0 && i < entries.length) showHorseDetail(entries[i].entryNo, race);
+            };
+
             function draw() {
                 const { w, h } = resizeCanvas();
                 const order = currentOrder();
@@ -1836,11 +1935,12 @@
                 order.forEach((hh, i) => posOf[hh.entryNo] = i + 1);
                 const leader = order[0];
 
-                const colW = Math.min(118, Math.max(92, w * 0.24)); // 左の順位表の幅
+                const colW = Math.min(160, Math.max(126, w * 0.36)); // 左の順位表の幅
                 const trackX = colW, trackW = w - colW;
                 const trackTop = HUD_H + SKY_H;
                 const laneH = Math.max(22, (h - trackTop - BOTTOM_H - 8) / entries.length);
                 const trackBottom = trackTop + laneH * entries.length;
+                tapLayout = { colW, trackTop, laneH };
                 const c = updateCamera(trackW, order);
                 const toX = p => trackX + (p - c.left) * c.ppu;
 
@@ -1958,19 +2058,19 @@
                     if (x < trackX || x > w) return;
                     const topY = trackTop + (i + 1) * laneH - laneH * 0.12 - figSize * 0.95;
                     const label = hh.finished ? `${hh.name} ${hh.rank}着` : `${hh.name} ${posOf[hh.entryNo]}番手`;
-                    ctx.font = 'bold 12px sans-serif';
-                    const tw = ctx.measureText(label).width + 12;
+                    ctx.font = 'bold 14px sans-serif';
+                    const tw = ctx.measureText(label).width + 14;
                     const bx = Math.min(Math.max(x - tw / 2, trackX + 2), w - tw - 2);
-                    const by = Math.max(trackTop - 18, topY - 22);
+                    const by = Math.max(trackTop - 22, topY - 24);
                     ctx.fillStyle = 'rgba(0,0,0,0.75)';
-                    roundRect(bx, by, tw, 18, 9); ctx.fill();
+                    roundRect(bx, by, tw, 21, 10); ctx.fill();
                     ctx.strokeStyle = '#ffd700';
                     ctx.lineWidth = 1.5;
                     ctx.stroke();
                     ctx.fillStyle = '#ffd700';
                     ctx.textAlign = 'left';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(label, bx + 6, by + 9.5);
+                    ctx.fillText(label, bx + 7, by + 11);
                 });
 
                 // 左の列: 馬番・馬名・今の順位・先頭との差（順位表を兼ねる）
@@ -1987,19 +2087,20 @@
                     const small = laneH < 34;
                     ctx.textAlign = 'left';
                     ctx.textBaseline = 'middle';
-                    ctx.font = `bold ${small ? 11 : 12}px sans-serif`;
+                    ctx.font = `bold ${small ? 13 : 14}px sans-serif`;
                     ctx.fillStyle = mine ? '#ffd700' : '#fff';
-                    const rankW = hh.finished ? 34 : 22; // 右端の順位表示の幅
-                    ctx.fillText(hh.name.substring(0, 6), textX, small ? cy : cy - 7, colW - textX - rankW);
+                    const rankW = hh.finished ? 34 : 20; // 右端の順位表示の幅
+                    // 入りきらない馬名は「…」で切る（タップで全部見られる）
+                    ctx.fillText(fitText(hh.name, colW - textX - rankW), textX, small ? cy : cy - 8);
                     if (!small) {
-                        ctx.font = '10px sans-serif';
-                        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                        ctx.font = '12px sans-serif';
+                        ctx.fillStyle = 'rgba(255,255,255,0.65)';
                         const gap = hh === leader ? '先頭' : (hh.finished && hh.marginLabel ? hh.marginLabel : `-${marginLabel(lengthsBehind(hh, leader))}`);
-                        ctx.fillText(gap, textX, cy + 8, colW - textX - rankW);
+                        ctx.fillText(fitText(gap, colW - textX - rankW), textX, cy + 9);
                     }
                     // 順位（ゴール後は着）
                     ctx.textAlign = 'right';
-                    ctx.font = `bold ${hh.finished ? (small ? 11 : 13) : (small ? 13 : 16)}px sans-serif`;
+                    ctx.font = `bold ${hh.finished ? (small ? 12 : 14) : (small ? 14 : 18)}px sans-serif`;
                     ctx.fillStyle = pos === 1 ? '#ffd700' : '#fff';
                     ctx.fillText(hh.finished ? `${pos}着` : `${pos}`, colW - 6, cy + 1);
                 });
@@ -2311,6 +2412,7 @@
             return { races: 0, betRaces: 0, hitRaces: 0, tickets: 0, hits: 0, betSum: 0, paySum: 0, bestPay: null, maxOdds: null, byType: {}, since: APP_VERSION };
         }
 
+        let lastSettledRace = null; // 結果画面で詳細を開くため（次のレースの準備後も残す）
         function showResult(sortedEntries) {
             raceInProgress = false;
             const race = state.currentRace;
@@ -2388,8 +2490,9 @@
                     </div>`).join('')
                 : '<div class="bet-empty">今回は馬券を買いませんでした。</div>';
 
+            lastSettledRace = race;
             document.getElementById('result-order').innerHTML = `<div class="order-table">` + sortedEntries.map((h, i) => `
-                <div class="order-row ${i < 3 ? 'top' : ''}">
+                <div class="order-row ${i < 3 ? 'top' : ''}" onclick="showHorseDetail(${h.entryNo}, lastSettledRace, ${i + 1})">
                     <span class="order-rank">${i + 1}着</span>
                     ${gateBadge(h.entryNo)}
                     <span class="order-name">${escapeHtml(h.name)}</span>
