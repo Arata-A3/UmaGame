@@ -287,7 +287,7 @@
 
         // --- Version ---
         // 更新を出すときはここを上げる（Service Worker のキャッシュもこの番号で更新される）
-        const APP_VERSION = '1.10.1';
+        const APP_VERSION = '1.10.2';
 
         // --- Application State ---
         let state = {
@@ -350,7 +350,7 @@
             // 戻るボタン用の見張りを積む。ブラウザはタップなどの操作なしで積んだ履歴を飛ばすことがあるので、
             // 画面に触れたときにも（まだ無ければ）積み直す
             ensureHistoryGuard();
-            document.addEventListener('pointerdown', ensureHistoryGuard, true);
+            document.addEventListener('pointerdown', () => ensureHistoryGuard(), true);
             // 絵の読み込みが終わったら、馬の絵が入る画面を描き直す
             loadHorseImage().then(() => {
                 if (state.currentRace && state.currentRace.entries) renderPaddock();
@@ -481,7 +481,7 @@
                 document.getElementById('game-container').scrollTop = 0;
             }
             currentScreen = screenId;
-            ensureHistoryGuard(); // メニューでも積む（戻るボタンで「やめますか？」を出すため）
+            ensureHistoryGuard(); // 戻るボタンでメニューまで戻れる分を積む
             document.getElementById('header-back-btn').classList.toggle('show', !!SCREEN_PARENT[screenId]);
             if (screenId === 'bank-screen') renderBank();
             if (screenId === 'stable-screen') renderStableInfo();
@@ -495,46 +495,57 @@
         }
 
         // スマホの戻るボタン・ブラウザの「戻る」: アプリを閉じずに、ひとつ前の画面へ戻る
-        // メニュー以外にいる間は、履歴に1つ「見張り」を積んでおき、戻るで消えたら画面を戻して積み直す
-        let historyGuard = false;
-        function ensureHistoryGuard() {
-            if (historyGuard) return;
-            try { history.pushState({ uma: 'guard' }, ''); historyGuard = true; } catch (e) { /* 使えない環境では何もしない */ }
+        // 戻るで消える履歴（見張り）を、今の画面からメニューまで戻る回数 + 1（メニューで「やめますか？」用）だけ積んでおく。
+        // ブラウザは「タップなどの操作なしで積んだ履歴」を戻るボタンで飛ばしてしまうので、
+        // 積むのは画面をタップしたとき・画面を切り替えたときだけにし、戻るボタンの処理の中では積まない。
+        const BACK_STEPS = {
+            'main-menu-screen': 0, 'settings-screen': 1, 'bank-screen': 1, 'stats-screen': 1, 'stable-screen': 1,
+            'paddock-screen': 1, 'betting-screen': 2, 'result-screen': 2,
+            'race-screen': 4 // レース中に押された分の予備
+        };
+        let guardCount = 0; // 積んである見張りの数
+        function ensureHistoryGuard(extra = 0) {
+            const need = (BACK_STEPS[currentScreen] || 0) + 1 + (typeof extra === 'number' ? extra : 0);
+            try {
+                while (guardCount < need) { history.pushState({ uma: 'guard' }, ''); guardCount++; }
+            } catch (e) { /* 使えない環境では何もしない */ }
         }
+        let exiting = false; // 終了のために自分で履歴を戻している間
         window.addEventListener('popstate', () => {
-            historyGuard = false;
+            guardCount = Math.max(0, guardCount - 1);
+            if (exiting) return;
             if (document.getElementById('modal-overlay').classList.contains('open')) {
-                const f = modalOpts.onCancel;
-                closeModal(); // ダイアログが開いていたら閉じるだけ
-                if (f) f();
+                if (modalOpts.isExit) { closeModal(); exitGame(); return; } // 「やめますか？」中にもう一度戻る → 終了
+                closeModal();  // ダイアログが開いていたら閉じるだけ
             } else if (raceInProgress) {
                 // レース中は戻らない
             } else if (currentScreen === 'main-menu-screen') {
-                askExit();    // メニューでは、やめるかどうか聞く
-                return;       // 見張りは積み直さない（もう一度戻るを押せば終了）
+                askExit();     // メニューでは、やめるかどうか聞く（ここでもう一度戻るを押すと終了）
             } else {
                 goBack();
             }
-            ensureHistoryGuard();
         });
 
         function askExit() {
             showModal('ゲームをやめますか？', '<p style="margin-top:0.75rem;">進み具合は自動で保存されています。</p>', {
-                okLabel: 'やめる', cancelLabel: '続ける', guard: false,
+                okLabel: 'やめる', cancelLabel: '続ける', guard: false, isExit: true,
                 onOk: exitGame,
-                onCancel: ensureHistoryGuard
+                onCancel: () => ensureHistoryGuard()
             });
         }
 
         function exitGame() {
             saveGame();
+            exiting = true;
             try { window.close(); } catch (e) { /* 閉じられない環境もある */ }
-            try { history.back(); } catch (e) { }
+            // 積んである見張りをすべて越えて、アプリの外へ戻る
+            try { const n = guardCount + 1; guardCount = 0; history.go(-n); } catch (e) { }
             // まだ画面が残っていたら（アプリ側で閉じられない場合）、戻るボタンでの終了を案内する
             setTimeout(() => {
+                exiting = false;
                 if (document.visibilityState === 'hidden') return;
                 showModal('ゲームを終了します', '<p style="margin-top:0.75rem;">もう一度スマホの戻るボタンを押すと終了します。</p>', {
-                    okLabel: '続ける', guard: false, onOk: ensureHistoryGuard
+                    okLabel: '続ける', guard: false, isExit: true, onOk: () => ensureHistoryGuard()
                 });
             }, 400);
         }
@@ -750,7 +761,7 @@
             cancel.style.display = opts.cancelLabel ? '' : 'none';
             cancel.textContent = opts.cancelLabel || '';
             document.getElementById('modal-overlay').classList.add('open');
-            if (opts.guard !== false) ensureHistoryGuard(); // 戻るボタンでダイアログを閉じられるように
+            if (opts.guard !== false) ensureHistoryGuard(1); // 戻るボタンでダイアログを閉じられるように
         }
 
         function closeModal() {
@@ -1048,6 +1059,13 @@
             return placements.map(p => p <= 3 ? `<span class="place-top">${p}着</span>` : `${p}着`).join(' - ');
         }
 
+        // 近走を小さな四角で（新しい順。3着以内は金色）。幅が一定なので行ごとにずれない
+        function placementsCompact(id) {
+            const placements = (state.recentPlacements && state.recentPlacements[id]) || [];
+            if (placements.length === 0) return '<span class="pl-none">初出走</span>';
+            return placements.map(p => `<span class="pl ${p <= 3 ? 'pl-top' : ''}">${p}</span>`).join('');
+        }
+
         // --- パドック（出馬表） ---
         function renderPaddock() {
             const race = state.currentRace;
@@ -1081,9 +1099,9 @@
                         <div class="entry-pop">${popBadge(pop[no])}</div>
                     </div>
                     <div class="entry-stats">${statBar('SP', horse.speed)}${statBar('ST', horse.stamina)}${statBar('GT', horse.guts)}</div>
-                    <div class="entry-recent"><span>調子 ${condBadge(horse.condition)}</span><span>近走 ${placementsHtml(horse.id)}</span></div>
+                    <div class="entry-recent"><span class="er-label">調子</span><span class="er-cond">${condBadge(horse.condition)}</span><span class="er-label">近走</span><span class="er-places">${placementsCompact(horse.id)}</span></div>
                 `;
-                const thumb = horseThumb(horse, no, window.innerWidth <= 480 ? 52 : 64);
+                const thumb = horseThumb(horse, no, window.innerWidth <= 480 ? 46 : 64);
                 if (thumb) item.querySelector('.thumb-slot').appendChild(thumb);
                 item.addEventListener('click', () => showHorseDetail(no));
                 entryList.appendChild(item);
@@ -1451,15 +1469,17 @@
                     const amt = betSelections.amounts[key] || '';
                     let label, popHtml = '';
                     if (isSingle) {
-                        popHtml = `<div class="bet-pop">${popBadge(pop[c.key])}</div>`;
+                        popHtml = `<div class="bet-pop-cell">${popBadge(pop[c.key])}</div>`;
                         const h = race.entries[parseInt(c.key) - 1];
                         label = `<span class="tap-detail" onclick="showHorseDetail(${parseInt(c.key)})">${gateBadge(parseInt(c.key))}<span class="bet-name">${h ? escapeHtml(h.name) : ''}</span></span>`;
                     } else {
                         label = comboHtml(currentBetTab, c.key);
                     }
-                    return `<div class="bet-row ${amt ? 'has-bet' : ''}" data-key="${key}">
+                    // 単勝・複勝は2段: 1段目に馬名（全幅）、2段目に人気・オッズ・金額
+                    return `<div class="bet-row ${isSingle ? 'single' : ''} ${amt ? 'has-bet' : ''}" data-key="${key}">
                         <div class="bet-combo">${label}</div>
-                        <div class="bet-odds">${c.odds.toFixed(1)}<small>倍</small>${popHtml}<div class="bet-est"></div></div>
+                        ${popHtml}
+                        <div class="bet-odds">${c.odds.toFixed(1)}<small>倍</small><div class="bet-est"></div></div>
                         <button class="bet-minus" onclick="addBetChip('${currentBetTab}', '${c.key}', -1)" aria-label="減らす">−</button>
                         <input type="number" min="0" inputmode="numeric" placeholder="0" class="bet-input" data-key="${key}"
                             value="${amt}" oninput="updateBetAmount('${currentBetTab}', '${c.key}', this.value)">
@@ -2549,7 +2569,7 @@
                     ${gateBadge(h.entryNo)}
                     <span class="order-name">${escapeHtml(h.name)}</span>
                     <span class="order-margin">${i === 0 ? '' : (h.marginLabel || '')}</span>
-                    <span class="order-odds">${race.odds.win[h.entryNo]}倍<small> ${pop[h.entryNo]}人気</small></span>
+                    <span class="order-sub">単勝 ${race.odds.win[h.entryNo]}倍 ${popBadge(pop[h.entryNo])}</span>
                 </div>`).join('') + `</div>`;
 
             document.getElementById('result-stats').innerHTML = statsTilesHtml(true);

@@ -1247,3 +1247,70 @@ main { overflow-x: hidden; }
 
 .modal-actions .btn { flex: 1; }
 .modal-cancel { background: rgba(255, 255, 255, 0.12); color: #fff; }
+
+/* ---------- v1.10.2: 行ごとに幅が変わらないよう、列の幅を固定する ---------- */
+/* 出走表: 右の列（オッズ・人気）は固定幅 */
+.entry-card { grid-template-columns: auto minmax(0, 1fr) 5.4em; }
+.entry-right { width: 5.4em; }
+
+/* 調子と近走: 調子の札は固定幅、近走は小さな四角 */
+.entry-recent {
+    display: grid;
+    grid-template-columns: auto 4.2em auto 1fr;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.er-label { color: var(--text-secondary); font-size: 0.8rem; }
+.er-cond .cond-badge { width: 4.2em; text-align: center; padding: 0; }
+.er-places { display: flex; gap: 3px; }
+
+.pl {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #bbb;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.pl.pl-top { background: rgba(212, 175, 55, 0.25); color: var(--accent-gold); }
+.pl-none { font-size: 0.8rem; color: var(--text-secondary); }
+
+/* 馬券の行: オッズの列を固定幅に */
+.bet-row { grid-template-columns: minmax(0, 1fr) 4.6em 36px 60px 36px; }
+.bet-odds { width: 4.6em; }
+.bet-pop { display: flex; justify-content: flex-end; }
+
+/* 着順: 1行目に着・番号・馬名・着差、2行目に単勝オッズと人気 */
+.order-row {
+    grid-template-columns: 2.4em 1.8em minmax(0, 1fr) 5.2em;
+    row-gap: 2px;
+}
+
+.order-margin { text-align: right; }
+.order-sub { grid-column: 3 / -1; font-size: 0.8rem; color: #999; display: flex; align-items: center; gap: 6px; }
+
+@media (max-width: 480px) {
+    .bet-row { grid-template-columns: minmax(0, 1fr) 4.4em 32px 50px 32px; }
+    .bet-odds { width: 4.4em; }
+}
+
+/* 単勝・複勝の行は2段（馬名を全幅で出す） */
+.bet-row.single .bet-combo { grid-column: 1 / -1; }
+.bet-pop-cell { display: flex; align-items: center; }
+
+/* 出走表: 右の列を少し細く、タグは1行に収める */
+.entry-card { grid-template-columns: auto minmax(0, 1fr) 4.9em; }
+.entry-right { width: 4.9em; }
+.entry-odds { font-size: 1.05rem; }
+.entry-tags { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+@media (max-width: 480px) {
+    .thumb-slot { width: 46px; }
+}
